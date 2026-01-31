@@ -1,5 +1,8 @@
 import Header from "@/components/header/Header";
-import UsdInrWidget from "@/components/UsdInrWidget";
+import StockList from "@/components/StocksList/StockList";
+import WatchStocks from "@/components/StocksList/WatchStocks";
+
+
 
 const Hero = () => {
   return (
@@ -10,13 +13,15 @@ const Hero = () => {
       {/* Dashboard Content */}
       <div className="flex gap-6 p-6">
         {/* Left Widgets */}
-        <div className="w-[340px]">
-          <UsdInrWidget />
-        </div>
+        
 
         {/* Main Area */}
         <div className="flex-1">
-          {/* charts / tables later */}
+
+
+        <StockList></StockList> 
+        <WatchStocks></WatchStocks>
+
         </div>
       </div>
     </div>
