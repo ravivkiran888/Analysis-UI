@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 20;
 
 const StockList = () => {
   const [data, setData] = useState([]);
@@ -90,6 +90,7 @@ useEffect(() => {
               <th className="text-right py-2 px-2 font-medium">Last Vol</th>
               <th className="text-right py-2 px-2 font-medium">Avg Vol</th>
               <th className="text-right py-2 px-2 font-medium">Curr Vol</th>
+               <th className="text-right py-2 px-2 font-medium">Updated On</th>
             </tr>
           </thead>
           <tbody>
@@ -129,6 +130,7 @@ useEffect(() => {
                       : (item.currentVolume/1000).toFixed(2) + 'K'
                     )}
                 </td>
+                   <td className="py-2 px-2 text-right">{item.updatedAt}</td>
               </tr>
             ))}
           </tbody>

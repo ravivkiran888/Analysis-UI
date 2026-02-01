@@ -1,6 +1,5 @@
 import Header from "@/components/header/Header";
 import StockList from "@/components/StocksList/StockList";
-import WatchStocks from "@/components/StocksList/WatchStocks";
 
 
 
@@ -20,7 +19,6 @@ const Hero = () => {
 
 
         <StockList></StockList> 
-        <WatchStocks></WatchStocks>
 
         </div>
       </div>
