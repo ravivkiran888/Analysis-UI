@@ -130,7 +130,11 @@ useEffect(() => {
                       : (item.currentVolume/1000).toFixed(2) + 'K'
                     )}
                 </td>
-                   <td className="py-2 px-2 text-right">{item.updatedAt}</td>
+                  
+                  <td className="py-2 px-2 text-right">
+  {new Date(item.updatedAt).toLocaleString()}
+</td>
+
               </tr>
             ))}
           </tbody>
