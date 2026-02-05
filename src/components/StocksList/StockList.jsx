@@ -28,12 +28,17 @@ useEffect(() => {
     });
 }, []);
 
-  const filteredData = useMemo(() => {
-    if (!searchTerm.trim()) return data;
-    return data.filter((item) =>
-      item.symbol.toLowerCase().includes(searchTerm.toLowerCase().trim())
-    );
-  }, [data, searchTerm]);
+ const filteredData = useMemo(() => {
+  const term = searchTerm.toLowerCase().trim();
+  if (!term) return data;
+
+  return data.filter((item) =>
+    [item.symbol, item.sector]
+      .filter(Boolean) // removes null / undefined
+      .some((field) => field.toLowerCase().includes(term))
+  );
+}, [data, searchTerm]);
+
 
   useEffect(() => {
     setCurrentPage(1);
@@ -90,6 +95,7 @@ useEffect(() => {
               <th className="text-right py-2 px-2 font-medium">Last Vol</th>
               <th className="text-right py-2 px-2 font-medium">Avg Vol</th>
               <th className="text-right py-2 px-2 font-medium">Curr Vol</th>
+               <th className="text-right py-2 px-2 font-medium">Sector</th>
                <th className="text-right py-2 px-2 font-medium">Updated On</th>
             </tr>
           </thead>
@@ -130,6 +136,11 @@ useEffect(() => {
                       : (item.currentVolume/1000).toFixed(2) + 'K'
                     )}
                 </td>
+
+                
+                  <td className="py-2 px-2 text-right">
+  {item.sector}
+</td>
                   
                   <td className="py-2 px-2 text-right">
   {new Date(item.updatedAt).toLocaleString()}
