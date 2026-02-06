@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const PIVOT_API_URL = "http://localhost:8082/analysis/api/pivot";
 const ITEMS_PER_PAGE = 20;
 
 const StockList = () => {
@@ -9,6 +10,14 @@ const StockList = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Pivot points modal state
+  const [pivotData, setPivotData] = useState(null);
+  const [currentLTP, setCurrentLTP] = useState(null);
+  const [pivotLoading, setPivotLoading] = useState(false);
+  const [pivotError, setPivotError] = useState(null);
+  const [showPivotModal, setShowPivotModal] = useState(false);
+  const [selectedSymbol, setSelectedSymbol] = useState("");
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/analysis/ready`)
@@ -17,11 +26,9 @@ const StockList = () => {
         return res.json();
       })
       .then((json) => {
-        // Ensure we handle both single object and array responses
         if (Array.isArray(json)) {
           setData(json);
         } else {
-          // If it's a single object, wrap it in an array
           setData([json]);
         }
         setLoading(false);
@@ -32,7 +39,41 @@ const StockList = () => {
       });
   }, []);
 
-  // Helper function to truncate sector text
+  // Function to fetch pivot points when a symbol is clicked
+  const fetchPivotPoints = async (symbol, ltp) => {
+    setSelectedSymbol(symbol);
+    setCurrentLTP(ltp);
+    setPivotLoading(true);
+    setPivotError(null);
+    setPivotData(null);
+    setShowPivotModal(true);
+    
+    try {
+      const response = await fetch(`${PIVOT_API_URL}/${symbol}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch pivot points: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setPivotData(data);
+    } catch (err) {
+      setPivotError(err.message);
+      console.error("Error fetching pivot points:", err);
+    } finally {
+      setPivotLoading(false);
+    }
+  };
+
+  // Close pivot modal
+  const closePivotModal = () => {
+    setShowPivotModal(false);
+    setPivotData(null);
+    setCurrentLTP(null);
+    setPivotError(null);
+    setSelectedSymbol("");
+  };
+
   const truncateSector = (sector) => {
     if (!sector) return '';
     if (sector.length <= 10) return sector;
@@ -58,7 +99,6 @@ const StockList = () => {
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const paginatedData = filteredData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  // Helper function to format volume
   const formatVolume = (volume) => {
     if (volume >= 1000000) {
       return (volume / 1000000).toFixed(2) + 'M';
@@ -68,7 +108,6 @@ const StockList = () => {
     return volume.toString();
   };
 
-  // Helper function to format timestamp
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return 'N/A';
     return new Date(timestamp * 1000).toLocaleString();
@@ -121,13 +160,21 @@ const StockList = () => {
               <th className="text-right py-2 px-2 font-medium">Net Chg</th>
               <th className="text-right py-2 px-2 font-medium">Volume</th>
               <th className="text-left py-2 px-2 font-medium">Sector</th>
-              <th className="text-right py-2 px-2 font-medium">VWAP Updated</th>
+              <th className="text-right py-2 px-2 font-medium">Last Updated</th>
             </tr>
           </thead>
           <tbody>
             {paginatedData.map((item) => (
               <tr key={item.symbol} className="border-b hover:bg-gray-50">
-                <td className="py-2 px-2 font-medium">{item.symbol}</td>
+                <td className="py-2 px-2">
+                  <button
+                    onClick={() => fetchPivotPoints(item.symbol, item.lastTradedPrice)}
+                    className="font-medium text-blue-600 hover:text-blue-800 hover:underline focus:outline-none"
+                    title={`Click to view pivot points for ${item.symbol}`}
+                  >
+                    {item.symbol}
+                  </button>
+                </td>
                 
                 <td className="py-2 px-2 text-right">{item.open?.toFixed(2)}</td>
                 <td className="py-2 px-2 text-right">{item.high?.toFixed(2)}</td>
@@ -148,7 +195,7 @@ const StockList = () => {
                   {truncateSector(item.sector)}
                 </td>
                 <td className="py-2 px-2 text-right text-xs text-gray-500">
-                  {formatTimestamp(item.vwapUpdatedAt)}
+                  {formatTimestamp(item.evaluatedAt)}
                 </td>
               </tr>
             ))}
@@ -210,6 +257,128 @@ const StockList = () => {
         <div className="text-center py-8 text-gray-500">
           No entry-ready signals found
           {searchTerm && ` for "${searchTerm}"`}
+        </div>
+      )}
+
+      {/* Simple Pivot Points Modal */}
+      {showPivotModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-sm w-full">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center p-4 border-b">
+              <h3 className="font-semibold text-gray-800">
+                {selectedSymbol}
+              </h3>
+             <button
+  onClick={closePivotModal}
+  className="w-7 h-7 flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 focus:outline-none transition-all duration-200 shadow-sm"
+>
+  ✕
+</button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-4">
+              {pivotLoading && (
+                <div className="text-center py-4 text-gray-500">
+                  Loading pivot points...
+                </div>
+              )}
+
+              {pivotError && (
+                <div className="text-center py-4">
+                  <div className="text-red-500 text-sm">{pivotError}</div>
+                </div>
+              )}
+
+              {pivotData && currentLTP && (
+                <div className="space-y-4">
+                  {/* Current LTP */}
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 mb-1">Current Price</div>
+                    <div className="text-2xl font-bold text-gray-800">
+                      {currentLTP.toFixed(2)}
+                    </div>
+                  </div>
+
+                  {/* Pivot Point */}
+                  <div className="text-center">
+                    <div className="text-xs text-gray-500 mb-1">Pivot Point</div>
+                    <div className="text-xl font-bold text-blue-600">
+                      {typeof pivotData.pivot === 'number' 
+                        ? pivotData.pivot.toFixed(2) 
+                        : pivotData.pivot}
+                    </div>
+                    <div className={`text-xs mt-1 ${
+                      currentLTP > pivotData.pivot ? 'text-green-600' : 
+                      currentLTP < pivotData.pivot ? 'text-red-600' : 'text-gray-600'
+                    }`}>
+                      {currentLTP > pivotData.pivot ? 'Above' : 
+                       currentLTP < pivotData.pivot ? 'Below' : 'Equal to'} pivot
+                    </div>
+                  </div>
+
+                  {/* Support & Resistance Grid */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Resistances */}
+                    <div>
+                      <div className="text-center text-xs text-green-600 font-medium mb-2">
+                        Resistances
+                      </div>
+                      <div className="space-y-1">
+                        {['r1', 'r2', 'r3'].map((level, index) => (
+                          <div key={level} className="flex justify-between items-center p-2 bg-green-50 rounded">
+                            <span className="text-xs font-medium">R{index + 1}</span>
+                            <span className="text-sm">
+                              {typeof pivotData.resistances?.[level] === 'number' 
+                                ? pivotData.resistances[level].toFixed(2) 
+                                : pivotData.resistances?.[level]}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Supports */}
+                    <div>
+                      <div className="text-center text-xs text-red-600 font-medium mb-2">
+                        Supports
+                      </div>
+                      <div className="space-y-1">
+                        {['s1', 's2', 's3'].map((level, index) => (
+                          <div key={level} className="flex justify-between items-center p-2 bg-red-50 rounded">
+                            <span className="text-xs font-medium">S{index + 1}</span>
+                            <span className="text-sm">
+                              {typeof pivotData.supports?.[level] === 'number' 
+                                ? pivotData.supports[level].toFixed(2) 
+                                : pivotData.supports?.[level]}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Date Info */}
+                  <div className="text-center text-xs text-gray-400 pt-2 border-t">
+                    Based on {pivotData.date} data
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t">
+             <button
+  onClick={closePivotModal}
+  className="w-full px-4 py-2 bg-blue-500 text-white rounded 
+             hover:bg-blue-600 focus:outline-none"
+>
+  Close
+</button>
+
+            </div>
+          </div>
         </div>
       )}
     </div>
