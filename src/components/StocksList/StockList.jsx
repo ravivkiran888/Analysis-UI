@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const PIVOT_API_URL = `${import.meta.env.VITE_API_BASE_URL}/analysis/api/pivot`; // Fixed here
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8082";
+const PIVOT_API_URL = `${API_BASE_URL}/analysis/api/pivot`;
 const ITEMS_PER_PAGE = 20;
 
 const StockList = () => {
@@ -19,6 +18,10 @@ const StockList = () => {
   const [pivotError, setPivotError] = useState(null);
   const [showPivotModal, setShowPivotModal] = useState(false);
   const [selectedSymbol, setSelectedSymbol] = useState("");
+  
+  // Manual symbol input
+  const [manualSymbol, setManualSymbol] = useState("");
+  const [manualSymbolError, setManualSymbolError] = useState("");
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/analysis/ready`)
@@ -40,12 +43,13 @@ const StockList = () => {
       });
   }, []);
 
-  // Function to fetch pivot points when a symbol is clicked
-  const fetchPivotPoints = async (symbol, ltp) => {
+  // Function to fetch pivot points for any symbol
+  const fetchPivotPoints = async (symbol, ltp = null) => {
     setSelectedSymbol(symbol);
     setCurrentLTP(ltp);
     setPivotLoading(true);
     setPivotError(null);
+    setManualSymbolError("");
     setPivotData(null);
     setShowPivotModal(true);
     
@@ -53,6 +57,9 @@ const StockList = () => {
       const response = await fetch(`${PIVOT_API_URL}/${symbol}`);
       
       if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error(`Symbol "${symbol}" not found`);
+        }
         throw new Error(`Failed to fetch pivot points: ${response.status}`);
       }
       
@@ -64,6 +71,31 @@ const StockList = () => {
     } finally {
       setPivotLoading(false);
     }
+  };
+
+  // Handle manual symbol submission
+  const handleManualSymbolSubmit = (e) => {
+    e.preventDefault();
+    const symbol = manualSymbol.trim().toUpperCase();
+    
+    if (!symbol) {
+      setManualSymbolError("Please enter a symbol");
+      return;
+    }
+    
+    if (symbol.length < 2 || symbol.length > 10) {
+      setManualSymbolError("Symbol must be 2-10 characters");
+      return;
+    }
+    
+    // Clear previous errors
+    setManualSymbolError("");
+    
+    // Fetch pivot points
+    fetchPivotPoints(symbol);
+    
+    // Clear input
+    setManualSymbol("");
   };
 
   // Close pivot modal
@@ -119,8 +151,8 @@ const StockList = () => {
 
   return (
     <div className="bg-white rounded-lg shadow p-4 w-full max-w-4xl mx-auto">
-      {/* Compact Header */}
-      <div className="flex justify-between items-center mb-3">
+      {/* Header with Search and Manual Symbol Input */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
         <div>
           <h3 className="font-semibold text-gray-800">ENTRY READY SIGNALS</h3>
           <p className="text-xs text-gray-500">
@@ -128,23 +160,58 @@ const StockList = () => {
           </p>
         </div>
         
-        <div className="relative w-48">
-          <input
-            type="text"
-            placeholder="Search symbol or sector..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-1.5 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm("")}
-              className="absolute right-2 top-1.5 text-gray-400 hover:text-gray-600"
-            >
-              ×
-            </button>
-          )}
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          {/* Manual Symbol Input */}
+          <div className="relative">
+            <form onSubmit={handleManualSymbolSubmit} className="flex gap-2">
+              <input
+                type="text"
+                value={manualSymbol}
+                onChange={(e) => {
+                  setManualSymbol(e.target.value.toUpperCase());
+                  setManualSymbolError("");
+                }}
+                placeholder="Enter symbol (e.g., RELIANCE)"
+                className="w-full px-3 py-1.5 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+              <button
+                type="submit"
+                className="px-3 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none whitespace-nowrap"
+              >
+                Get Pivot
+              </button>
+            </form>
+            {manualSymbolError && (
+              <div className="absolute -bottom-5 left-0 text-xs text-red-500">
+                {manualSymbolError}
+              </div>
+            )}
+          </div>
+          
+          {/* Search Input */}
+          <div className="relative w-full sm:w-48">
+            <input
+              type="text"
+              placeholder="Search in table..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-3 py-1.5 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="absolute right-2 top-1.5 text-gray-400 hover:text-gray-600"
+              >
+                ×
+              </button>
+            )}
+          </div>
         </div>
+      </div>
+
+      {/* Info Banner */}
+      <div className="mb-3 p-2 bg-blue-50 rounded text-xs text-blue-700">
+        💡 Click any symbol in the table or enter a symbol above to view pivot points
       </div>
 
       {/* Compact Table */}
@@ -270,12 +337,12 @@ const StockList = () => {
               <h3 className="font-semibold text-gray-800">
                 {selectedSymbol}
               </h3>
-             <button
-  onClick={closePivotModal}
-  className="w-7 h-7 flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 focus:outline-none transition-all duration-200 shadow-sm"
->
-  ✕
-</button>
+              <button
+                onClick={closePivotModal}
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 focus:outline-none transition-all duration-200 shadow-sm"
+              >
+                ✕
+              </button>
             </div>
 
             {/* Modal Content */}
@@ -288,19 +355,24 @@ const StockList = () => {
 
               {pivotError && (
                 <div className="text-center py-4">
-                  <div className="text-red-500 text-sm">{pivotError}</div>
+                  <div className="text-red-500 text-sm mb-2">{pivotError}</div>
+                  <div className="text-xs text-gray-500">
+                    Try entering a different symbol
+                  </div>
                 </div>
               )}
 
-              {pivotData && currentLTP && (
+              {pivotData && (
                 <div className="space-y-4">
-                  {/* Current LTP */}
-                  <div className="text-center">
-                    <div className="text-xs text-gray-500 mb-1">Current Price</div>
-                    <div className="text-2xl font-bold text-gray-800">
-                      {currentLTP.toFixed(2)}
+                  {/* Current LTP if available */}
+                  {currentLTP && (
+                    <div className="text-center">
+                      <div className="text-xs text-gray-500 mb-1">Current Price</div>
+                      <div className="text-2xl font-bold text-gray-800">
+                        {currentLTP.toFixed(2)}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Pivot Point */}
                   <div className="text-center">
@@ -310,13 +382,15 @@ const StockList = () => {
                         ? pivotData.pivot.toFixed(2) 
                         : pivotData.pivot}
                     </div>
-                    <div className={`text-xs mt-1 ${
-                      currentLTP > pivotData.pivot ? 'text-green-600' : 
-                      currentLTP < pivotData.pivot ? 'text-red-600' : 'text-gray-600'
-                    }`}>
-                      {currentLTP > pivotData.pivot ? 'Above' : 
-                       currentLTP < pivotData.pivot ? 'Below' : 'Equal to'} pivot
-                    </div>
+                    {currentLTP && (
+                      <div className={`text-xs mt-1 ${
+                        currentLTP > pivotData.pivot ? 'text-green-600' : 
+                        currentLTP < pivotData.pivot ? 'text-red-600' : 'text-gray-600'
+                      }`}>
+                        {currentLTP > pivotData.pivot ? 'Above' : 
+                         currentLTP < pivotData.pivot ? 'Below' : 'Equal to'} pivot
+                      </div>
+                    )}
                   </div>
 
                   {/* Support & Resistance Grid */}
@@ -370,14 +444,12 @@ const StockList = () => {
 
             {/* Modal Footer */}
             <div className="p-4 border-t">
-             <button
-  onClick={closePivotModal}
-  className="w-full px-4 py-2 bg-blue-500 text-white rounded 
-             hover:bg-blue-600 focus:outline-none"
->
-  Close
-</button>
-
+              <button
+                onClick={closePivotModal}
+                className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
