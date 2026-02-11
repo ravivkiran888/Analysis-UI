@@ -11,8 +11,7 @@ const Hero = () => {
 
       {/* Dashboard Content */}
       <div className="flex gap-6 p-6">
-        {/* Left Widgets */}
-        
+      
 
         {/* Main Area */}
         <div className="flex-1">

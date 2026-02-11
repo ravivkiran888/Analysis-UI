@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8082";
-const PIVOT_API_URL = `${API_BASE_URL}/analysis/api/pivot`;
-const ITEMS_PER_PAGE = 20;
+import * as CONSTANTS from "../../constants/";
 
 const StockList = () => {
+
+  
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -23,8 +22,13 @@ const StockList = () => {
   const [manualSymbol, setManualSymbol] = useState("");
   const [manualSymbolError, setManualSymbolError] = useState("");
 
+
   useEffect(() => {
-    fetch(`${API_BASE_URL}/analysis/ready`)
+
+      console.log("All env vars 33:", CONSTANTS.ITEMS_PER_PAGE);
+
+
+    fetch(`${import.meta.env.VITE_API_BASE_URL}/analysis/ready`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch data");
         return res.json();
@@ -54,7 +58,7 @@ const StockList = () => {
     setShowPivotModal(true);
     
     try {
-      const response = await fetch(`${PIVOT_API_URL}/${symbol}`);
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/analysis/api/pivot/${symbol}`);
       
       if (!response.ok) {
         if (response.status === 404) {
@@ -128,9 +132,9 @@ const StockList = () => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedData = filteredData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filteredData.length / CONSTANTS.ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * CONSTANTS.ITEMS_PER_PAGE;
+  const paginatedData = filteredData.slice(startIndex, startIndex + CONSTANTS.ITEMS_PER_PAGE);
 
   const formatVolume = (volume) => {
     if (volume >= 1000000) {
@@ -223,7 +227,6 @@ const StockList = () => {
               <th className="text-right py-2 px-2 font-medium">Open</th>
               <th className="text-right py-2 px-2 font-medium">High</th>
               <th className="text-right py-2 px-2 font-medium">Low</th>
-              <th className="text-right py-2 px-2 font-medium">Close</th>
               <th className="text-right py-2 px-2 font-medium">LTP</th>
               <th className="text-right py-2 px-2 font-medium">Net Chg</th>
               <th className="text-right py-2 px-2 font-medium">Volume</th>
@@ -233,7 +236,16 @@ const StockList = () => {
           </thead>
           <tbody>
             {paginatedData.map((item) => (
-              <tr key={item.symbol} className="border-b hover:bg-gray-50">
+
+
+                
+
+               <tr 
+      key={item.symbol} 
+      className={`border-b hover:bg-gray-50 ${
+        Math.abs(item.open - item.low) < 0.50 ? 'bg-green-100' : ''
+      }`}
+    >
                 <td className="py-2 px-2">
                   <button
                     onClick={() => fetchPivotPoints(item.symbol, item.lastTradedPrice)}
@@ -247,7 +259,6 @@ const StockList = () => {
                 <td className="py-2 px-2 text-right">{item.open?.toFixed(2)}</td>
                 <td className="py-2 px-2 text-right">{item.high?.toFixed(2)}</td>
                 <td className="py-2 px-2 text-right">{item.low?.toFixed(2)}</td>
-                <td className="py-2 px-2 text-right">{item.close?.toFixed(2)}</td>
                 <td className="py-2 px-2 text-right font-medium">
                   {item.lastTradedPrice?.toFixed(2)}
                 </td>
@@ -275,7 +286,7 @@ const StockList = () => {
       {totalPages > 1 && (
         <div className="flex justify-between items-center mt-3 pt-3 border-t">
           <div className="text-xs text-gray-500">
-            Showing {Math.min(paginatedData.length, ITEMS_PER_PAGE)} of {filteredData.length}
+            Showing {Math.min(paginatedData.length, CONSTANTS.ITEMS_PER_PAGE)} of {filteredData.length}
           </div>
           <div className="flex gap-1">
             <button
