@@ -121,24 +121,10 @@ const StockList = () => {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-4 gap-2 mb-4 text-xs">
-        <div className="bg-green-50 p-2 rounded">
-          <span className="text-gray-600">High Volume (≥2.0x):</span>{' '}
-          <span className="font-bold">{data.filter(d => d.volumeExpansion >= 2.0).length}</span>
-        </div>
-        <div className="bg-yellow-50 p-2 rounded">
-          <span className="text-gray-600">Low Volume ({'<'}1.5x):</span>{' '}
-          <span className="font-bold">{data.filter(d => d.volumeExpansion < 1.5 && d.volumeExpansion > 0).length}</span>
-        </div>
-        <div className="bg-blue-50 p-2 rounded">
-          <span className="text-gray-600">Total Volume {'>'} 1L:</span>{' '}
-          <span className="font-bold">{data.filter(d => d.totalDayVolume >= 100000).length}</span>
-        </div>
-        <div className="bg-green-100 p-2 rounded">
-          <span className="text-gray-600">Open-Low {'<'} 0.80:</span>{' '}
-          <span className="font-bold text-green-700">
-            {data.filter(item => shouldHighlightRow(item)).length}
-          </span>
-        </div>
+        
+      
+      
+      
       </div>
 
       {/* Main Table */}
@@ -150,8 +136,7 @@ const StockList = () => {
               <th className="text-right py-2 px-2 font-medium">Open</th>
               <th className="text-right py-2 px-2 font-medium">LTP</th>
               <th className="text-right py-2 px-2 font-medium">Change</th>
-              <th className="text-right py-2 px-2 font-medium">Day High</th>
-              <th className="text-right py-2 px-2 font-medium">Day Low</th>
+              <th className="text-right py-2 px-2 font-medium">Day Range</th> {/* Merged column */}
               <th className="text-right py-2 px-2 font-medium">Volume Ratio</th>
               <th className="text-right py-2 px-2 font-medium">Total Volume</th>
               <th className="text-right py-2 px-2 font-medium">Last Updated</th>
@@ -186,8 +171,12 @@ const StockList = () => {
                   }`}>
                     {item.dayChange >= 0 ? '+' : ''}{item.dayChange?.toFixed(2)}
                   </td>
-                  <td className="py-2 px-2 text-right">{item.dayHigh?.toFixed(2)}</td>
-                  <td className="py-2 px-2 text-right">{item.dayLow?.toFixed(2)}</td>
+                  {/* New combined Day Range cell */}
+                  <td className="py-2 px-2 text-right">
+                    <span className="text-green-600">{item.dayHigh?.toFixed(2)}</span>
+                    {' / '}
+                    <span className="text-red-600">{item.dayLow?.toFixed(2)}</span>
+                  </td>
                   <td className="py-2 px-2 text-right">
                     {getVolumeStatus(item.volumeExpansion)}
                   </td>
