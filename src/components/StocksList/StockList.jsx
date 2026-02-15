@@ -7,6 +7,7 @@ const StockList = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
+  const [modalContent, setModalContent] = useState(null); // holds level insights for modal
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_BASE_URL}/api/signals/ready`)
@@ -31,7 +32,6 @@ const StockList = () => {
   const filteredData = useMemo(() => {
     const term = searchTerm.toLowerCase().trim();
     if (!term) return data;
-
     return data.filter((item) =>
       [item.symbol]
         .filter(Boolean)
@@ -48,21 +48,21 @@ const StockList = () => {
   const paginatedData = filteredData.slice(startIndex, startIndex + CONSTANTS.ITEMS_PER_PAGE);
 
   const formatVolume = (volume) => {
-    if (!volume || volume === 0) return 'Not Available';
+    if (!volume || volume === 0) return "Not Available";
     if (volume >= 10000000) {
-      return (volume / 10000000).toFixed(2) + 'Cr';
+      return (volume / 10000000).toFixed(2) + "Cr";
     } else if (volume >= 100000) {
-      return (volume / 100000).toFixed(2) + 'L';
+      return (volume / 100000).toFixed(2) + "L";
     } else if (volume >= 1000) {
-      return (volume / 1000).toFixed(2) + 'K';
+      return (volume / 1000).toFixed(2) + "K";
     }
     return volume.toString();
   };
 
   const formatTimestamp = (timestamp) => {
-    if (!timestamp) return 'N/A';
+    if (!timestamp) return "N/A";
     const date = new Date(timestamp);
-    return date.toLocaleTimeString() + ' ' + date.toLocaleDateString();
+    return date.toLocaleTimeString() + " " + date.toLocaleDateString();
   };
 
   const getVolumeStatus = (expansion) => {
@@ -78,11 +78,39 @@ const StockList = () => {
     return <span>{expansion.toFixed(1)}x</span>;
   };
 
-  // Function to check if row should be highlighted
+  const formatLevelInsights = (text) => {
+    if (!text) return null;
+    const lines = text.split("\n");
+    return lines.map((line, i) => {
+      const parts = line.split(/(\*\*.*?\*\*)/g);
+      const formattedLine = parts.map((part, j) => {
+        if (part.startsWith("**") && part.endsWith("**")) {
+          const content = part.slice(2, -2);
+          return <strong key={j}>{content}</strong>;
+        }
+        return <span key={j}>{part}</span>;
+      });
+      return (
+        <div key={i}>
+          {formattedLine}
+          {i < lines.length - 1 && <br />}
+        </div>
+      );
+    });
+  };
+
   const shouldHighlightRow = (item) => {
     if (!item.dayOpen || !item.dayLow) return false;
     const difference = Math.abs(item.dayOpen - item.dayLow);
-    return difference < 0.80;
+    return difference < 0.8;
+  };
+
+  const openModal = (insights) => {
+    setModalContent(insights);
+  };
+
+  const closeModal = () => {
+    setModalContent(null);
   };
 
   if (loading) return <div className="p-4 text-sm">Loading entry-ready signals...</div>;
@@ -98,7 +126,7 @@ const StockList = () => {
             {filteredData.length} opportunities • Page {currentPage}/{totalPages}
           </p>
         </div>
-        
+
         {/* Search Input */}
         <div className="relative w-full sm:w-64">
           <input
@@ -119,13 +147,8 @@ const StockList = () => {
         </div>
       </div>
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-4 gap-2 mb-4 text-xs">
-        
-      
-      
-      
-      </div>
+      {/* Summary Stats – can be filled later */}
+      <div className="grid grid-cols-4 gap-2 mb-4 text-xs"></div>
 
       {/* Main Table */}
       <div className="overflow-x-auto">
@@ -136,45 +159,47 @@ const StockList = () => {
               <th className="text-right py-2 px-2 font-medium">Open</th>
               <th className="text-right py-2 px-2 font-medium">LTP</th>
               <th className="text-right py-2 px-2 font-medium">Change</th>
-              <th className="text-right py-2 px-2 font-medium">Day Range</th> {/* Merged column */}
+              <th className="text-right py-2 px-2 font-medium">Day Range</th>
               <th className="text-right py-2 px-2 font-medium">Volume Ratio</th>
               <th className="text-right py-2 px-2 font-medium">Total Volume</th>
               <th className="text-right py-2 px-2 font-medium">Last Updated</th>
+              <th className="text-center py-2 px-2 font-medium">Levels</th>
             </tr>
           </thead>
           <tbody>
             {paginatedData.map((item) => {
               const highlight = shouldHighlightRow(item);
-              const openLowDiff = item.dayOpen && item.dayLow 
-                ? Math.abs(item.dayOpen - item.dayLow).toFixed(2) 
-                : null;
-              
+              const openLowDiff =
+                item.dayOpen && item.dayLow
+                  ? Math.abs(item.dayOpen - item.dayLow).toFixed(2)
+                  : null;
+
               return (
-                <tr 
-                  key={item.symbol} 
+                <tr
+                  key={item.symbol}
                   className={`border-b hover:bg-gray-100 transition-colors ${
-                    highlight ? 'bg-green-100' : ''
+                    highlight ? "bg-green-100" : ""
                   }`}
-                  title={highlight ? `Open-Low difference: ${openLowDiff}` : ''}
+                  title={highlight ? `Open-Low difference: ${openLowDiff}` : ""}
                 >
                   <td className="py-2 px-2 font-medium text-blue-600">
                     {item.symbol}
                   </td>
-                  <td className="py-2 px-2 text-right">
-                    {item.dayOpen?.toFixed(2)}
-                  </td>
+                  <td className="py-2 px-2 text-right">{item.dayOpen?.toFixed(2)}</td>
                   <td className="py-2 px-2 text-right font-bold">
                     {item.lastTradedPrice?.toFixed(2)}
                   </td>
-                  <td className={`py-2 px-2 text-right ${
-                    item.dayChange >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {item.dayChange >= 0 ? '+' : ''}{item.dayChange?.toFixed(2)}
+                  <td
+                    className={`py-2 px-2 text-right ${
+                      item.dayChange >= 0 ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
+                    {item.dayChange >= 0 ? "+" : ""}
+                    {item.dayChange?.toFixed(2)}
                   </td>
-                  {/* New combined Day Range cell */}
                   <td className="py-2 px-2 text-right">
                     <span className="text-green-600">{item.dayHigh?.toFixed(2)}</span>
-                    {' / '}
+                    {" / "}
                     <span className="text-red-600">{item.dayLow?.toFixed(2)}</span>
                   </td>
                   <td className="py-2 px-2 text-right">
@@ -186,12 +211,57 @@ const StockList = () => {
                   <td className="py-2 px-2 text-right text-xs text-gray-500">
                     {formatTimestamp(item.timestamp)}
                   </td>
+                  <td className="py-2 px-2 text-center">
+                    {item.levelInsights ? (
+                      <button
+                        onClick={() => openModal(item.levelInsights)}
+                        className="cursor-pointer text-blue-500 text-lg focus:outline-none"
+                        aria-label="View levels"
+                      >
+                        ℹ️
+                      </button>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
+                  </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
+
+      {/* Modal for level insights */}
+      {modalContent && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={closeModal}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-y-auto p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="font-bold text-gray-800">Key Levels</h4>
+              <button
+                onClick={closeModal}
+                className="text-gray-500 hover:text-gray-700 text-xl"
+              >
+                ×
+              </button>
+            </div>
+            <div className="text-sm text-gray-700 whitespace-pre-wrap break-words">
+              {formatLevelInsights(modalContent)}
+            </div>
+            <button
+              onClick={closeModal}
+              className="mt-4 w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -202,7 +272,7 @@ const StockList = () => {
           <div className="flex gap-1">
             <button
               disabled={currentPage === 1}
-              onClick={() => setCurrentPage(p => p - 1)}
+              onClick={() => setCurrentPage((p) => p - 1)}
               className="px-2 py-1 text-sm border rounded disabled:opacity-30 hover:bg-gray-50"
             >
               ←
@@ -212,7 +282,7 @@ const StockList = () => {
             </span>
             <button
               disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(p => p + 1)}
+              onClick={() => setCurrentPage((p) => p + 1)}
               className="px-2 py-1 text-sm border rounded disabled:opacity-30 hover:bg-gray-50"
             >
               →
