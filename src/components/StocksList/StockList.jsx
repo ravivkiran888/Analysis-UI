@@ -7,7 +7,7 @@ const StockList = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const [modalData, setModalData] = useState(null); // unified modal: { type, content }
+  const [modalData, setModalData] = useState(null); // { type, content }
   const [sortConfig, setSortConfig] = useState({ key: "dayChange", direction: "desc" });
 
   useEffect(() => {
@@ -68,13 +68,20 @@ const StockList = () => {
     return volume.toString();
   };
 
-  const formatTimestamp = (timestamp) => {
+  // On mobile, show only time (the date is usually the same for all rows)
+  const formatTimestampMobile = (timestamp) => {
+    if (!timestamp) return "N/A";
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); // e.g., "10:58 PM"
+  };
+
+  // Full timestamp for desktop tooltip (optional)
+  const formatTimestampFull = (timestamp) => {
     if (!timestamp) return "N/A";
     const date = new Date(timestamp);
     return date.toLocaleTimeString() + " " + date.toLocaleDateString();
   };
 
-  // Format level insights with bold markdown
   const formatLevelInsights = (text) => {
     if (!text) return null;
     const lines = text.split("\n");
@@ -100,7 +107,6 @@ const StockList = () => {
     return Math.abs(item.dayOpen - item.dayLow) < 0.8;
   };
 
-  // Unified modal handlers
   const openLevelsModal = (content) => setModalData({ type: "levels", content });
   const openVolumeModal = (content) => setModalData({ type: "volume", content });
   const closeModal = () => setModalData(null);
@@ -137,26 +143,26 @@ const StockList = () => {
         </div>
       </div>
 
-      {/* Scrollable table with nowrap to prevent overlapping */}
+      {/* Scrollable table with nowrap to prevent wrapping */}
       <div className="relative">
         <div className="overflow-x-auto">
           <table className="w-full text-xs sm:text-sm">
             <thead>
               <tr className="border-b bg-gray-50">
-                <th className="text-left py-1 px-1 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Symbol</th>
-                <th className="hidden sm:table-cell text-right py-1 px-1 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Open</th>
-                <th className="text-right py-1 px-1 sm:py-2 sm:px-2 font-medium whitespace-nowrap">LTP</th>
+                <th className="text-left py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Symbol</th>
+                <th className="hidden sm:table-cell text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Open</th>
+                <th className="text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">LTP</th>
                 <th
-                  className="hidden sm:table-cell text-right py-1 px-1 sm:py-2 sm:px-2 font-medium cursor-pointer hover:bg-gray-200 whitespace-nowrap"
+                  className="hidden sm:table-cell text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium cursor-pointer hover:bg-gray-200 whitespace-nowrap"
                   onClick={() => handleSort("dayChange")}
                 >
                   Change {sortConfig.key === "dayChange" && (sortConfig.direction === "asc" ? "↑" : "↓")}
                 </th>
-                <th className="text-right py-1 px-1 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Day Range</th>
-                <th className="text-right py-1 px-1 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Tot Volume</th>
-                <th className="text-right py-1 px-1 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Updated</th>
-                <th className="text-center py-1 px-1 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Volume</th>
-                <th className="text-center py-1 px-1 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Levels</th>
+                <th className="text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Day Range</th>
+                <th className="text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Tot Volume</th>
+                <th className="text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Updated</th>
+                <th className="text-center py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Volume</th>
+                <th className="text-center py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Levels</th>
               </tr>
             </thead>
             <tbody>
@@ -174,13 +180,13 @@ const StockList = () => {
                     }`}
                     title={highlight ? `Open-Low difference: ${openLowDiff}` : ""}
                   >
-                    <td className="py-1 px-1 sm:py-2 sm:px-2 font-medium text-blue-600 whitespace-nowrap">
+                    <td className="py-1 px-0.5 sm:py-2 sm:px-2 font-medium text-blue-600 whitespace-nowrap">
                       {item.symbol}
                     </td>
                     <td className="hidden sm:table-cell text-right whitespace-nowrap">
                       {item.dayOpen?.toFixed(2)}
                     </td>
-                    <td className="py-1 px-1 sm:py-2 sm:px-2 text-right font-bold whitespace-nowrap">
+                    <td className="py-1 px-0.5 sm:py-2 sm:px-2 text-right font-bold whitespace-nowrap">
                       {item.lastTradedPrice?.toFixed(2)}
                     </td>
                     <td className={`hidden sm:table-cell text-right whitespace-nowrap ${
@@ -189,19 +195,25 @@ const StockList = () => {
                       {item.dayChange >= 0 ? "+" : ""}
                       {item.dayChange?.toFixed(2)}
                     </td>
-                    <td className="py-1 px-1 sm:py-2 sm:px-2 text-right whitespace-nowrap">
+                    <td className="py-1 px-0.5 sm:py-2 sm:px-2 text-right whitespace-nowrap">
+                      {/* Remove spaces around slash to save width */}
                       <span className="text-green-600">{item.dayHigh?.toFixed(2)}</span>
-                      {" / "}
-                      <span className="text-red-600">{item.dayLow?.toFixed(2)}</span>
+                      /<span className="text-red-600">{item.dayLow?.toFixed(2)}</span>
                     </td>
-                    <td className="hidden sm:table-cell text-right font-mono whitespace-nowrap">
+                    <td className="py-1 px-0.5 sm:py-2 sm:px-2 text-right font-mono whitespace-nowrap">
                       {formatVolume(item.totalDayVolume)}
                     </td>
-                    <td className="py-1 px-1 sm:py-2 sm:px-2 text-right text-xs text-gray-500 whitespace-nowrap">
-                      {formatTimestamp(item.timestamp)}
+                    <td className="py-1 px-0.5 sm:py-2 sm:px-2 text-right text-xs text-gray-500 whitespace-nowrap">
+                      {/* On mobile only time, on desktop full timestamp */}
+                      <span className="sm:hidden" title={formatTimestampFull(item.timestamp)}>
+                        {formatTimestampMobile(item.timestamp)}
+                      </span>
+                      <span className="hidden sm:inline">
+                        {formatTimestampFull(item.timestamp)}
+                      </span>
                     </td>
-                    {/* Volume Commentary Column - now opens modal */}
-                    <td className="py-1 px-1 sm:py-2 sm:px-2 text-center whitespace-nowrap">
+                    {/* Volume Commentary Column - opens modal */}
+                    <td className="py-1 px-0.5 sm:py-2 sm:px-2 text-center whitespace-nowrap">
                       {item.volumeCommentary ? (
                         <button
                           onClick={() => openVolumeModal(item.volumeCommentary)}
@@ -215,7 +227,7 @@ const StockList = () => {
                       )}
                     </td>
                     {/* Levels Column - opens modal */}
-                    <td className="py-1 px-1 sm:py-2 sm:px-2 text-center whitespace-nowrap">
+                    <td className="py-1 px-0.5 sm:py-2 sm:px-2 text-center whitespace-nowrap">
                       {item.levelInsights ? (
                         <button
                           onClick={() => openLevelsModal(item.levelInsights)}
