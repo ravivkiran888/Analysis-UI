@@ -152,8 +152,9 @@ const StockList = () => {
                 <th className="text-left py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Symbol</th>
                 <th className="hidden sm:table-cell text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Open</th>
                 <th className="text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">LTP</th>
+                {/* Change column - now visible on all screens */}
                 <th
-                  className="hidden sm:table-cell text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium cursor-pointer hover:bg-gray-200 whitespace-nowrap"
+                  className="text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium cursor-pointer hover:bg-gray-200 whitespace-nowrap"
                   onClick={() => handleSort("dayChange")}
                 >
                   Change {sortConfig.key === "dayChange" && (sortConfig.direction === "asc" ? "↑" : "↓")}
@@ -189,14 +190,14 @@ const StockList = () => {
                     <td className="py-1 px-0.5 sm:py-2 sm:px-2 text-right font-bold whitespace-nowrap">
                       {item.lastTradedPrice?.toFixed(2)}
                     </td>
-                    <td className={`hidden sm:table-cell text-right whitespace-nowrap ${
+                    {/* Change column - now visible on mobile */}
+                    <td className={`py-1 px-0.5 sm:py-2 sm:px-2 text-right whitespace-nowrap ${
                       item.dayChange >= 0 ? "text-green-600" : "text-red-600"
                     }`}>
                       {item.dayChange >= 0 ? "+" : ""}
                       {item.dayChange?.toFixed(2)}
                     </td>
                     <td className="py-1 px-0.5 sm:py-2 sm:px-2 text-right whitespace-nowrap">
-                      {/* Remove spaces around slash to save width */}
                       <span className="text-green-600">{item.dayHigh?.toFixed(2)}</span>
                       /<span className="text-red-600">{item.dayLow?.toFixed(2)}</span>
                     </td>
@@ -204,7 +205,6 @@ const StockList = () => {
                       {formatVolume(item.totalDayVolume)}
                     </td>
                     <td className="py-1 px-0.5 sm:py-2 sm:px-2 text-right text-xs text-gray-500 whitespace-nowrap">
-                      {/* On mobile only time, on desktop full timestamp */}
                       <span className="sm:hidden" title={formatTimestampFull(item.timestamp)}>
                         {formatTimestampMobile(item.timestamp)}
                       </span>
