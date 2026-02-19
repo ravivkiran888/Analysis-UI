@@ -7,7 +7,6 @@ const StockList = () => {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
-  const [modalData, setModalData] = useState(null); // { type, content }
   const [sortConfig, setSortConfig] = useState({ key: "dayChange", direction: "desc" });
 
   useEffect(() => {
@@ -68,38 +67,16 @@ const StockList = () => {
     return volume.toString();
   };
 
-  // On mobile, show only time (the date is usually the same for all rows)
   const formatTimestampMobile = (timestamp) => {
     if (!timestamp) return "N/A";
     const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); // e.g., "10:58 PM"
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Full timestamp for desktop tooltip (optional)
   const formatTimestampFull = (timestamp) => {
     if (!timestamp) return "N/A";
     const date = new Date(timestamp);
     return date.toLocaleTimeString() + " " + date.toLocaleDateString();
-  };
-
-  const formatLevelInsights = (text) => {
-    if (!text) return null;
-    const lines = text.split("\n");
-    return lines.map((line, i) => {
-      const parts = line.split(/(\*\*.*?\*\*)/g);
-      const formattedLine = parts.map((part, j) => {
-        if (part.startsWith("**") && part.endsWith("**")) {
-          return <strong key={j}>{part.slice(2, -2)}</strong>;
-        }
-        return <span key={j}>{part}</span>;
-      });
-      return (
-        <div key={i}>
-          {formattedLine}
-          {i < lines.length - 1 && <br />}
-        </div>
-      );
-    });
   };
 
   const shouldHighlightRow = (item) => {
@@ -107,9 +84,16 @@ const StockList = () => {
     return Math.abs(item.dayOpen - item.dayLow) < 0.8;
   };
 
-  const openLevelsModal = (content) => setModalData({ type: "levels", content });
-  const openVolumeModal = (content) => setModalData({ type: "volume", content });
-  const closeModal = () => setModalData(null);
+  // Helper for signal styling
+  const getSignalStyle = (signal) => {
+    if (signal === "ENTRY_READY") {
+      return "bg-green-700 text-white font-semibold";
+    }
+    if (signal === "WATCH") {
+      return "bg-green-200 text-gray-800 font-semibold";
+    }
+    return "bg-gray-200 text-gray-600"; // fallback
+  };
 
   if (loading) return <div className="p-4 text-sm">Loading entry-ready signals...</div>;
   if (error) return <div className="p-4 text-sm text-red-600">Error: {error}</div>;
@@ -119,7 +103,7 @@ const StockList = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
         <div>
-          <h3 className="font-semibold text-gray-800">🚀 ENTRY READY SIGNALS</h3>
+          <h3 className="font-semibold text-gray-800">🚀 ENTRY READY & WATCH SIGNALS</h3>
           <p className="text-xs text-gray-500">
             {filteredData.length} opportunities • Page {currentPage}/{totalPages}
           </p>
@@ -143,7 +127,7 @@ const StockList = () => {
         </div>
       </div>
 
-      {/* Scrollable table with nowrap to prevent wrapping */}
+      {/* Scrollable table */}
       <div className="relative">
         <div className="overflow-x-auto">
           <table className="w-full text-xs sm:text-sm">
@@ -152,7 +136,6 @@ const StockList = () => {
                 <th className="text-left py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Symbol</th>
                 <th className="hidden sm:table-cell text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Open</th>
                 <th className="text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">LTP</th>
-                {/* Change column - now visible on all screens */}
                 <th
                   className="text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium cursor-pointer hover:bg-gray-200 whitespace-nowrap"
                   onClick={() => handleSort("dayChange")}
@@ -162,8 +145,7 @@ const StockList = () => {
                 <th className="text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Day Range</th>
                 <th className="text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Tot Volume</th>
                 <th className="text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Updated</th>
-                <th className="text-center py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Volume</th>
-                <th className="text-center py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Levels</th>
+                <th className="text-center py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Signal</th>
               </tr>
             </thead>
             <tbody>
@@ -190,7 +172,6 @@ const StockList = () => {
                     <td className="py-1 px-0.5 sm:py-2 sm:px-2 text-right font-bold whitespace-nowrap">
                       {item.lastTradedPrice?.toFixed(2)}
                     </td>
-                    {/* Change column - now visible on mobile */}
                     <td className={`py-1 px-0.5 sm:py-2 sm:px-2 text-right whitespace-nowrap ${
                       item.dayChange >= 0 ? "text-green-600" : "text-red-600"
                     }`}>
@@ -212,33 +193,11 @@ const StockList = () => {
                         {formatTimestampFull(item.timestamp)}
                       </span>
                     </td>
-                    {/* Volume Commentary Column - opens modal */}
+                    {/* Signal column */}
                     <td className="py-1 px-0.5 sm:py-2 sm:px-2 text-center whitespace-nowrap">
-                      {item.volumeCommentary ? (
-                        <button
-                          onClick={() => openVolumeModal(item.volumeCommentary)}
-                          className="cursor-pointer text-blue-500 text-lg focus:outline-none"
-                          aria-label="View volume insights"
-                        >
-                          📊
-                        </button>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                    {/* Levels Column - opens modal */}
-                    <td className="py-1 px-0.5 sm:py-2 sm:px-2 text-center whitespace-nowrap">
-                      {item.levelInsights ? (
-                        <button
-                          onClick={() => openLevelsModal(item.levelInsights)}
-                          className="cursor-pointer text-blue-500 text-lg focus:outline-none"
-                          aria-label="View levels"
-                        >
-                          ℹ️
-                        </button>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs ${getSignalStyle(item.signal)}`}>
+                        {item.signal || "UNKNOWN"}
+                      </span>
                     </td>
                   </tr>
                 );
@@ -277,46 +236,10 @@ const StockList = () => {
         </div>
       )}
 
-      {/* Unified Modal for Levels or Volume */}
-      {modalData && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={closeModal}
-        >
-          <div
-            className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-y-auto p-5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center mb-3">
-              <h4 className="font-bold text-gray-800">
-                {modalData.type === "levels" ? "Key Levels" : "Volume Insights"}
-              </h4>
-              <button
-                onClick={closeModal}
-                className="text-gray-500 hover:text-gray-700 text-xl"
-              >
-                ×
-              </button>
-            </div>
-            <div className="text-sm text-gray-700 whitespace-pre-wrap break-words">
-              {modalData.type === "levels"
-                ? formatLevelInsights(modalData.content)
-                : modalData.content}
-            </div>
-            <button
-              onClick={closeModal}
-              className="mt-4 w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Empty State */}
       {filteredData.length === 0 && (
         <div className="text-center py-8 text-gray-500">
-          No entry-ready signals found
+          No signals found
           {searchTerm && ` for "${searchTerm}"`}
         </div>
       )}
