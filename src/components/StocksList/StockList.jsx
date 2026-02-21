@@ -8,7 +8,6 @@ const StockList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: "dayChange", direction: "desc" });
-  const [modalData, setModalData] = useState(null); // { content }
 
   useEffect(() => {
     fetch(`${import.meta.env.VITE_API_BASE_URL}/api/signals/ready`)
@@ -95,29 +94,11 @@ const StockList = () => {
     return "bg-gray-200 text-gray-600";
   };
 
-  // Format description with bold and line breaks
-  const formatDescription = (text) => {
-    if (!text) return null;
-    const lines = text.split("\n");
-    return lines.map((line, i) => {
-      const parts = line.split(/(\*\*.*?\*\*)/g);
-      const formattedLine = parts.map((part, j) => {
-        if (part.startsWith("**") && part.endsWith("**")) {
-          return <strong key={j}>{part.slice(2, -2)}</strong>;
-        }
-        return <span key={j}>{part}</span>;
-      });
-      return (
-        <div key={i}>
-          {formattedLine}
-          {i < lines.length - 1 && <br />}
-        </div>
-      );
-    });
+  // Helper function to display sector (empty if Unknown)
+  const displaySector = (sector) => {
+    if (!sector || sector === "Unknown") return "";
+    return sector;
   };
-
-  const openDescriptionModal = (content) => setModalData({ content });
-  const closeModal = () => setModalData(null);
 
   if (loading) return <div className="p-4 text-sm">Loading entry-ready signals...</div>;
   if (error) return <div className="p-4 text-sm text-red-600">Error: {error}</div>;
@@ -170,7 +151,7 @@ const StockList = () => {
                 <th className="text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Tot Volume</th>
                 <th className="text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Updated</th>
                 <th className="text-center py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Signal</th>
-                <th className="text-center py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Details</th>
+                <th className="text-left py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Sector</th>
               </tr>
             </thead>
             <tbody>
@@ -224,19 +205,9 @@ const StockList = () => {
                         {item.signal || "UNKNOWN"}
                       </span>
                     </td>
-                    {/* Details column with icon */}
-                    <td className="py-1 px-0.5 sm:py-2 sm:px-2 text-center whitespace-nowrap">
-                      {item.description ? (
-                        <button
-                          onClick={() => openDescriptionModal(item.description)}
-                          className="cursor-pointer text-blue-500 text-lg focus:outline-none"
-                          aria-label="View full details"
-                        >
-                          ℹ️
-                        </button>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
+                    {/* Sector column - empty for Unknown */}
+                    <td className="py-1 px-0.5 sm:py-2 sm:px-2 whitespace-nowrap text-gray-600">
+                      {displaySector(item.sector)}
                     </td>
                   </tr>
                 );
@@ -280,38 +251,6 @@ const StockList = () => {
         <div className="text-center py-8 text-gray-500">
           No signals found
           {searchTerm && ` for "${searchTerm}"`}
-        </div>
-      )}
-
-      {/* Modal for Description */}
-      {modalData && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={closeModal}
-        >
-          <div
-            className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center mb-3">
-              <h4 className="font-bold text-gray-800">Options Levels & Details</h4>
-              <button
-                onClick={closeModal}
-                className="text-gray-500 hover:text-gray-700 text-xl"
-              >
-                ×
-              </button>
-            </div>
-            <div className="text-sm text-gray-700 whitespace-pre-wrap break-words">
-              {formatDescription(modalData.content)}
-            </div>
-            <button
-              onClick={closeModal}
-              className="mt-4 w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
-            >
-              Close
-            </button>
-          </div>
         </div>
       )}
     </div>
