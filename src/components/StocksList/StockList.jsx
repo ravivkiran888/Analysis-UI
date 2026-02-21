@@ -11,7 +11,8 @@ const StockList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: "dayChange", direction: "desc" });
-  const [selectedSector, setSelectedSector] = useState(null); // New state for sector filter
+  const [selectedSector, setSelectedSector] = useState(null);
+  const [selectedSectorGroup, setSelectedSectorGroup] = useState(null); // New state for sector groups
 
   // Fetch signals data
   useEffect(() => {
@@ -54,15 +55,30 @@ const StockList = () => {
     }));
   };
 
-  // Handle sector card click
+  // Handle sector card click with group support
   const handleSectorClick = (sector) => {
-    setSelectedSector(prevSector => prevSector === sector ? null : sector);
+    // Check if this is a group sector (like Bank)
+    if (sector === "BANKNIFTY") {
+      setSelectedSectorGroup(prevGroup => prevGroup === "BANK" ? null : "BANK");
+      setSelectedSector(null); // Clear individual sector selection
+    } else {
+      setSelectedSector(prevSector => prevSector === sector ? null : sector);
+      setSelectedSectorGroup(null); // Clear group selection
+    }
     setCurrentPage(1); // Reset to first page when filtering
+  };
+
+  // Clear all filters
+  const clearAllFilters = () => {
+    setSelectedSector(null);
+    setSelectedSectorGroup(null);
+    setSearchTerm("");
   };
 
   // Clear sector filter
   const clearSectorFilter = () => {
     setSelectedSector(null);
+    setSelectedSectorGroup(null);
   };
 
   const filteredData = useMemo(() => {
@@ -76,8 +92,12 @@ const StockList = () => {
       );
     }
     
-    // Apply sector filter
-    if (selectedSector) {
+    // Apply sector filter - handle group filtering for BANK
+    if (selectedSectorGroup === "BANK") {
+      filtered = filtered.filter((item) => 
+        item.sector === "NIFTYPSUBANK" || item.sector === "NIFTYPVTBANK"
+      );
+    } else if (selectedSector) {
       filtered = filtered.filter((item) => item.sector === selectedSector);
     }
     
@@ -91,11 +111,11 @@ const StockList = () => {
       });
     }
     return filtered;
-  }, [data, searchTerm, sortConfig, selectedSector]);
+  }, [data, searchTerm, sortConfig, selectedSector, selectedSectorGroup]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, sortConfig, selectedSector]);
+  }, [searchTerm, sortConfig, selectedSector, selectedSectorGroup]);
 
   const totalPages = Math.ceil(filteredData.length / CONSTANTS.ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * CONSTANTS.ITEMS_PER_PAGE;
@@ -160,6 +180,13 @@ const StockList = () => {
     return sectorMap[sector] || sector;
   };
 
+  // Get the active filter display text
+  const getActiveFilterText = () => {
+    if (selectedSectorGroup === "BANK") return "All Banks (PSU + Private)";
+    if (selectedSector) return getSectorDisplayName(selectedSector);
+    return null;
+  };
+
   // Get green color intensity based on positive change value
   const getGreenIntensity = (change) => {
     if (change <= 0) return "text-red-600"; // Return red for negative
@@ -174,8 +201,8 @@ const StockList = () => {
   };
 
   // Get background color intensity for card
-  const getGreenBackground = (change, isSelected) => {
-    if (isSelected) return "bg-blue-100 border-blue-300 ring-2 ring-blue-300";
+  const getGreenBackground = (change, isSelected, isGroupSelected) => {
+    if (isSelected || isGroupSelected) return "bg-blue-100 border-blue-300 ring-2 ring-blue-300";
     if (change <= 0) return "bg-white";
     
     if (change >= 300) return "bg-green-100 border-green-300";
@@ -184,6 +211,14 @@ const StockList = () => {
     if (change >= 100) return "bg-green-50 border-green-100";
     if (change >= 50) return "bg-white border-green-100";
     return "bg-white";
+  };
+
+  // Check if a sector is part of an active group
+  const isSectorInActiveGroup = (sector) => {
+    if (selectedSectorGroup === "BANK") {
+      return sector === "NIFTYPSUBANK" || sector === "NIFTYPVTBANK";
+    }
+    return false;
   };
 
   if (loading && sectorLoading) return <div className="p-4 text-sm">Loading...</div>;
@@ -205,7 +240,7 @@ const StockList = () => {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-sm font-semibold text-gray-600">📊 SECTOR PERFORMANCE</h4>
-            {selectedSector && (
+            {(selectedSector || selectedSectorGroup) && (
               <button
                 onClick={clearSectorFilter}
                 className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition-colors"
@@ -225,16 +260,18 @@ const StockList = () => {
                 : 'text-red-600';
               
               const isSelected = selectedSector === sector.sector;
+              const isGroupSelected = selectedSectorGroup === "BANK" && 
+                (sector.sector === "NIFTYPSUBANK" || sector.sector === "NIFTYPVTBANK" || sector.sector === "BANKNIFTY");
               
               // Add background shading for positive sectors and highlight for selected
-              const bgClass = getGreenBackground(sector.dayChange, isSelected);
+              const bgClass = getGreenBackground(sector.dayChange, isSelected, isGroupSelected);
 
               return (
                 <div
                   key={sector.sector}
                   onClick={() => handleSectorClick(sector.sector)}
                   className={`flex-shrink-0 border rounded-lg shadow-sm p-3 min-w-[120px] hover:shadow-md transition-all cursor-pointer ${bgClass} ${
-                    isSelected ? 'scale-105' : 'hover:scale-105'
+                    (isSelected || isGroupSelected) ? 'scale-105' : 'hover:scale-105'
                   }`}
                 >
                   <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -243,7 +280,7 @@ const StockList = () => {
                   <div className={`text-sm font-bold mt-1 ${textColorClass}`}>
                     {isPositive ? '+' : ''}{sector.dayChange?.toFixed(2)}
                   </div>
-                  {isSelected && (
+                  {(isSelected || isGroupSelected) && (
                     <div className="text-[10px] text-blue-600 font-medium mt-1">
                       ✓ Selected
                     </div>
@@ -252,6 +289,13 @@ const StockList = () => {
               );
             })}
           </div>
+          
+          {/* Helper text for Bank group selection */}
+          {selectedSectorGroup === "BANK" && (
+            <div className="mt-2 text-xs text-blue-600 bg-blue-50 p-2 rounded">
+              Showing all Banking stocks (PSU Bank + Private Bank)
+            </div>
+          )}
         </div>
       )}
 
@@ -261,9 +305,9 @@ const StockList = () => {
           <h3 className="font-semibold text-gray-800">🚀 ENTRY READY & WATCH SIGNALS</h3>
           <p className="text-xs text-gray-500">
             {filteredData.length} opportunities • Page {currentPage}/{totalPages}
-            {selectedSector && (
+            {getActiveFilterText() && (
               <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-800">
-                Filtering: {getSectorDisplayName(selectedSector)}
+                Filtering: {getActiveFilterText()}
               </span>
             )}
           </p>
@@ -311,7 +355,12 @@ const StockList = () => {
                     Change {sortConfig.key === "dayChange" && (sortConfig.direction === "asc" ? "↑" : "↓")}
                   </th>
                   <th className="text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Day Range</th>
-                  <th className="text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Tot Volume</th>
+                  <th
+                    className="text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium cursor-pointer hover:bg-gray-200 whitespace-nowrap"
+                    onClick={() => handleSort("totalDayVolume")}
+                  >
+                    Tot Volume {sortConfig.key === "totalDayVolume" && (sortConfig.direction === "asc" ? "↑" : "↓")}
+                  </th>
                   <th className="text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Updated</th>
                   <th className="text-center py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Signal</th>
                   <th className="text-left py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Sector</th>
@@ -416,12 +465,10 @@ const StockList = () => {
           No signals found
           {searchTerm && ` for "${searchTerm}"`}
           {selectedSector && ` in ${getSectorDisplayName(selectedSector)} sector`}
-          {(searchTerm || selectedSector) && (
+          {selectedSectorGroup === "BANK" && " in Banking sector"}
+          {(searchTerm || selectedSector || selectedSectorGroup) && (
             <button
-              onClick={() => {
-                setSearchTerm("");
-                setSelectedSector(null);
-              }}
+              onClick={clearAllFilters}
               className="ml-2 text-blue-500 hover:text-blue-700 underline"
             >
               Clear all filters
