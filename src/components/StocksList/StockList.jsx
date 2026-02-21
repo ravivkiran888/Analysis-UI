@@ -12,7 +12,7 @@ const StockList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: "dayChange", direction: "desc" });
   const [selectedSector, setSelectedSector] = useState(null);
-  const [selectedSectorGroup, setSelectedSectorGroup] = useState(null); // New state for sector groups
+  const [selectedSectorGroup, setSelectedSectorGroup] = useState(null);
 
   // Fetch signals data
   useEffect(() => {
@@ -55,27 +55,23 @@ const StockList = () => {
     }));
   };
 
-  // Handle sector card click with group support
   const handleSectorClick = (sector) => {
-    // Check if this is a group sector (like Bank)
     if (sector === "BANKNIFTY") {
       setSelectedSectorGroup(prevGroup => prevGroup === "BANK" ? null : "BANK");
-      setSelectedSector(null); // Clear individual sector selection
+      setSelectedSector(null);
     } else {
       setSelectedSector(prevSector => prevSector === sector ? null : sector);
-      setSelectedSectorGroup(null); // Clear group selection
+      setSelectedSectorGroup(null);
     }
-    setCurrentPage(1); // Reset to first page when filtering
+    setCurrentPage(1);
   };
 
-  // Clear all filters
   const clearAllFilters = () => {
     setSelectedSector(null);
     setSelectedSectorGroup(null);
     setSearchTerm("");
   };
 
-  // Clear sector filter
   const clearSectorFilter = () => {
     setSelectedSector(null);
     setSelectedSectorGroup(null);
@@ -85,14 +81,12 @@ const StockList = () => {
     const term = searchTerm.toLowerCase().trim();
     let filtered = data;
     
-    // Apply search filter
     if (term) {
       filtered = filtered.filter((item) =>
         [item.symbol].filter(Boolean).some((field) => field.toLowerCase().includes(term))
       );
     }
     
-    // Apply sector filter - handle group filtering for BANK
     if (selectedSectorGroup === "BANK") {
       filtered = filtered.filter((item) => 
         item.sector === "NIFTYPSUBANK" || item.sector === "NIFTYPVTBANK"
@@ -101,7 +95,6 @@ const StockList = () => {
       filtered = filtered.filter((item) => item.sector === selectedSector);
     }
     
-    // Apply sorting
     if (sortConfig.key) {
       filtered = [...filtered].sort((a, b) => {
         const aVal = a[sortConfig.key];
@@ -156,13 +149,11 @@ const StockList = () => {
     return "bg-gray-200 text-gray-600";
   };
 
-  // Helper function to display sector (empty if Unknown)
   const displaySector = (sector) => {
     if (!sector || sector === "Unknown") return "";
     return sector;
   };
 
-  // Helper function to get sector display name
   const getSectorDisplayName = (sector) => {
     const sectorMap = {
       "BANKNIFTY": "Bank",
@@ -180,31 +171,25 @@ const StockList = () => {
     return sectorMap[sector] || sector;
   };
 
-  // Get the active filter display text
   const getActiveFilterText = () => {
     if (selectedSectorGroup === "BANK") return "All Banks (PSU + Private)";
     if (selectedSector) return getSectorDisplayName(selectedSector);
     return null;
   };
 
-  // Get green color intensity based on positive change value
   const getGreenIntensity = (change) => {
-    if (change <= 0) return "text-red-600"; // Return red for negative
-    
-    // Define thresholds for different green shades
-    if (change >= 300) return "text-green-900 font-bold"; // Darkest green for very high positive
+    if (change <= 0) return "text-red-600";
+    if (change >= 300) return "text-green-900 font-bold";
     if (change >= 200) return "text-green-800 font-bold";
     if (change >= 150) return "text-green-700 font-semibold";
     if (change >= 100) return "text-green-600 font-semibold";
     if (change >= 50) return "text-green-500";
-    return "text-green-400"; // Lightest green for small positive
+    return "text-green-400";
   };
 
-  // Get background color intensity for card
   const getGreenBackground = (change, isSelected, isGroupSelected) => {
     if (isSelected || isGroupSelected) return "bg-blue-100 border-blue-300 ring-2 ring-blue-300";
     if (change <= 0) return "bg-white";
-    
     if (change >= 300) return "bg-green-100 border-green-300";
     if (change >= 200) return "bg-green-50 border-green-200";
     if (change >= 150) return "bg-green-50 border-green-200";
@@ -213,7 +198,6 @@ const StockList = () => {
     return "bg-white";
   };
 
-  // Check if a sector is part of an active group
   const isSectorInActiveGroup = (sector) => {
     if (selectedSectorGroup === "BANK") {
       return sector === "NIFTYPSUBANK" || sector === "NIFTYPVTBANK";
@@ -251,7 +235,6 @@ const StockList = () => {
           </div>
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300">
             {sectorData.map((sector) => {
-              // Skip entries without a valid sector name
               if (!sector.sector) return null;
               
               const isPositive = sector.dayChange >= 0;
@@ -263,7 +246,6 @@ const StockList = () => {
               const isGroupSelected = selectedSectorGroup === "BANK" && 
                 (sector.sector === "NIFTYPSUBANK" || sector.sector === "NIFTYPVTBANK" || sector.sector === "BANKNIFTY");
               
-              // Add background shading for positive sectors and highlight for selected
               const bgClass = getGreenBackground(sector.dayChange, isSelected, isGroupSelected);
 
               return (
@@ -290,7 +272,6 @@ const StockList = () => {
             })}
           </div>
           
-          {/* Helper text for Bank group selection */}
           {selectedSectorGroup === "BANK" && (
             <div className="mt-2 text-xs text-blue-600 bg-blue-50 p-2 rounded">
               Showing all Banking stocks (PSU Bank + Private Bank)
@@ -411,13 +392,12 @@ const StockList = () => {
                           {formatTimestampFull(item.timestamp)}
                         </span>
                       </td>
-                      {/* Signal column */}
+                      {/* Signal column with -AT suffix when atStrongSupport is true */}
                       <td className="py-1 px-0.5 sm:py-2 sm:px-2 text-center whitespace-nowrap">
                         <span className={`inline-block px-2 py-0.5 rounded text-xs ${getSignalStyle(item.signal)}`}>
-                          {item.signal || "UNKNOWN"}
+                          {item.signal}{item.atStrongSupport ? '-AT Suppourt' : ''}
                         </span>
                       </td>
-                      {/* Sector column - empty for Unknown */}
                       <td className="py-1 px-0.5 sm:py-2 sm:px-2 whitespace-nowrap text-gray-600">
                         {displaySector(item.sector)}
                       </td>
