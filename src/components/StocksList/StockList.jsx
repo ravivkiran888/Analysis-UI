@@ -15,21 +15,32 @@ const StockList = () => {
   const [selectedSectorGroup, setSelectedSectorGroup] = useState(null);
 
   // Fetch signals data
-  useEffect(() => {
-    fetch(`${import.meta.env.VITE_API_BASE_URL}/api/signals/ready`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch data");
-        return res.json();
-      })
-      .then((json) => {
-        setData(Array.isArray(json) ? json : [json]);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
-  }, []);
+
+ 
+    useEffect(()=>
+    {
+
+const fetchData = async () => {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/api/signals/ready`
+      );
+
+      if (!res.ok) throw new Error("Request failed");
+
+      const json = await res.json();
+      setData(json);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+
+    },[])
+
 
   // Fetch sector data
   useEffect(() => {
@@ -233,7 +244,7 @@ const StockList = () => {
               </button>
             )}
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 pb-2">
             {sectorData.map((sector) => {
               if (!sector.sector) return null;
               
