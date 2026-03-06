@@ -2,7 +2,11 @@ import { formatTimestamp, formatVolume } from "../utils/formatters";
 
 const SignalsTable = ({ data, sortConfig, onSort, selectedSector }) => {
   return (
+    
     <div className="overflow-x-auto">
+  
+    Last Updated: <span className='font-bold'> {formatTimestamp(data?.[0]?.timestamp)} </span>
+
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b bg-gray-50">
@@ -30,7 +34,6 @@ const SignalsTable = ({ data, sortConfig, onSort, selectedSector }) => {
 
             </th>
 
-            <th className="text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Updated</th>
             <th className="text-center py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Signal</th>
             <th className="text-left py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Sector</th>
 
@@ -90,10 +93,7 @@ const SignalsTable = ({ data, sortConfig, onSort, selectedSector }) => {
                     {formatVolume(item.totalDayVolume)}
                   </td>
 
-                  <td className="py-1 px-0.5 sm:py-2 sm:px-2 text-right text-xs text-gray-500 whitespace-nowrap">
-                    {formatTimestamp(item.timestamp)}
-                  </td>
-
+                 
                   <td className="py-1 px-0.5 sm:py-2 sm:px-2 text-center whitespace-nowrap">
                     <span
                       className={`inline-block px-2 py-0.5 rounded text-xs ${item.signal === "ENTRY_READY"

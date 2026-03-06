@@ -19,5 +19,5 @@ export const formatTimestamp = (timestamp, compact = false) => {
     });
   }
 
-  return `${date.toLocaleTimeString()} ${date.toLocaleDateString()}`;
+  return `${date.toLocaleTimeString()}`;
 };

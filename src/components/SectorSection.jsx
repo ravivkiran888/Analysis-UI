@@ -1,3 +1,5 @@
+import {formatTimestamp} from '../utils/formatters'
+
 const SectorSection = ({
   sectors,
   selectedSector,
@@ -22,7 +24,7 @@ const handleOnClick = (sectorName) => {
     <div className="mb-6">
       <div className="flex justify-between mb-2">
         <h4 className="text-sm font-semibold text-gray-600">
-          SECTOR PERFORMANCE
+          SECTORS — Last Updated: <span className='font-bold'> {formatTimestamp(sectors?.[0]?.timestamp) || ""} </span>
         </h4>
         {(selectedSector || selectedSectorGroup) && (
           <button
