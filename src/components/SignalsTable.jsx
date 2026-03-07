@@ -1,21 +1,38 @@
 import { formatTimestamp, formatVolume } from "../utils/formatters";
 
+import { useState } from "react";
+import OptionMetricsModal from "./OptionMetricsModal"
+
 const SignalsTable = ({ data, sortConfig, onSort, selectedSector }) => {
+
+
+const [selectedSymbol, setSelectedSymbol] = useState(null);
+
   return (
-    
-    <div className="overflow-x-auto">
-  
-    Last Updated: <span className='font-bold'> {formatTimestamp(data?.[0]?.timestamp)} </span>
+     <>
+    <div className="overflow-x-auto bg-white rounded-lg shadow-sm border border-gray-200">
+
+      {/* Header */}
+      <div className="px-3 py-2 text-sm text-gray-600 border-b bg-gray-50">
+        Last Updated:
+        <span className="font-semibold ml-1">
+          {formatTimestamp(data?.[0]?.timestamp)}
+        </span>
+      </div>
 
       <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b bg-gray-50">
-            <th className="text-left py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Symbol</th>
-            <th className="hidden sm:table-cell text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Open</th>
-            <th className="text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">LTP</th>
+        <thead className="text-xs uppercase text-gray-500 bg-gray-50">
+          <tr>
+            <th className="text-left py-2 px-2 font-semibold">Symbol</th>
+
+            <th className="hidden sm:table-cell text-right py-2 px-2 font-semibold">
+              Open
+            </th>
+
+            <th className="text-right py-2 px-2 font-semibold">LTP</th>
 
             <th
-              className="text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium cursor-pointer hover:bg-gray-200 whitespace-nowrap"
+              className="text-right py-2 px-2 font-semibold cursor-pointer hover:bg-gray-100"
               onClick={() => onSort("dayChange")}
             >
               Change
@@ -23,25 +40,29 @@ const SignalsTable = ({ data, sortConfig, onSort, selectedSector }) => {
                 (sortConfig.direction === "asc" ? " ↑" : " ↓")}
             </th>
 
-            <th className="text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Day Range</th>
+            <th className="text-right py-2 px-2 font-semibold">Day Range</th>
 
-            <th className="text-right py-1 px-0.5 sm:py-2 sm:px-2 font-medium cursor-pointer hover:bg-gray-200 whitespace-nowrap"
-              onClick={() => onSort("totalDayVolume")}> Volume
-
+            <th
+              className="text-right py-2 px-2 font-semibold cursor-pointer hover:bg-gray-100"
+              onClick={() => onSort("totalDayVolume")}
+            >
+              Volume
               {sortConfig.key === "totalDayVolume" &&
                 (sortConfig.direction === "asc" ? " ↑" : " ↓")}
-
-
             </th>
 
-            <th className="text-center py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Signal</th>
-            <th className="text-left py-1 px-0.5 sm:py-2 sm:px-2 font-medium whitespace-nowrap">Sector</th>
+            <th className="text-center py-2 px-2 font-semibold">Signal</th>
 
+            <th className="text-left py-2 px-2 font-semibold">Sector</th>
+
+            <th className="text-center py-2 px-2 font-semibold">
+              Options
+            </th>
           </tr>
         </thead>
 
-        <tbody>
-          {(!data || data.length === 0) ? (
+        <tbody className="divide-y divide-gray-100">
+          {!data || data.length === 0 ? (
             <tr>
               <td colSpan={9} className="text-center py-8 text-gray-400 text-sm">
                 No symbols found {selectedSector}
@@ -55,66 +76,101 @@ const SignalsTable = ({ data, sortConfig, onSort, selectedSector }) => {
               return (
                 <tr
                   key={item.symbol}
-                  className={`border-b hover:bg-gray-100 transition-colors ${highlight ? "bg-green-100" : ""
-                    }`}
-                  title={highlight ? `Open-Low difference: ${openLowDiff}` : ""}
+                  className={`odd:bg-white even:bg-gray-50 hover:bg-gray-100 transition ${
+                    highlight ? "bg-green-50" : ""
+                  }`}
+                  title={
+                    highlight ? `Open-Low difference: ${openLowDiff}` : ""
+                  }
                 >
-                  <td className="py-1 px-0.5 sm:py-2 sm:px-2 font-medium text-blue-600 whitespace-nowrap">
+                  {/* Symbol */}
+                  <td className="py-2 px-2 font-semibold text-blue-600 hover:underline cursor-pointer whitespace-nowrap">
                     {item.symbol}
                   </td>
 
-                  <td className="hidden sm:table-cell text-right whitespace-nowrap">
+                  {/* Open */}
+                  <td className="hidden sm:table-cell text-right py-2 px-2 whitespace-nowrap">
                     {item.dayOpen?.toFixed(2)}
                   </td>
 
-                  <td className="py-1 px-0.5 sm:py-2 sm:px-2 text-right font-bold whitespace-nowrap">
+                  {/* LTP */}
+                  <td className="py-2 px-2 text-right font-semibold text-gray-900 whitespace-nowrap">
                     {item.lastTradedPrice?.toFixed(2)}
                   </td>
 
+                  {/* Change */}
                   <td
-                    className={`py-1 px-0.5 sm:py-2 sm:px-2 text-right whitespace-nowrap ${item.dayChange >= 0 ? "text-green-600" : "text-red-600"
-                      }`}
+                    className={`py-2 px-2 text-right font-semibold whitespace-nowrap ${
+                      item.dayChange >= 0
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }`}
                   >
                     {item.dayChange >= 0 ? "+" : ""}
                     {item.dayChange?.toFixed(2)}
                   </td>
 
-                  <td className="py-1 px-0.5 sm:py-2 sm:px-2 text-right whitespace-nowrap">
+                  {/* Day Range */}
+                  <td className="py-2 px-2 text-right whitespace-nowrap">
                     <span className="text-green-600">
                       {item.dayHigh?.toFixed(2)}
                     </span>
-                    /
+                    <span className="mx-1 text-gray-400">/</span>
                     <span className="text-red-600">
                       {item.dayLow?.toFixed(2)}
                     </span>
                   </td>
 
-                  <td className="py-1 px-0.5 sm:py-2 sm:px-2 text-right font-mono whitespace-nowrap">
+                  {/* Volume */}
+                  <td className="py-2 px-2 text-right font-mono whitespace-nowrap">
                     {formatVolume(item.totalDayVolume)}
                   </td>
 
-                 
-                  <td className="py-1 px-0.5 sm:py-2 sm:px-2 text-center whitespace-nowrap">
+                  {/* Signal */}
+                  <td className="py-2 px-2 text-center whitespace-nowrap">
                     <span
-                      className={`inline-block px-2 py-0.5 rounded text-xs ${item.signal === "ENTRY_READY"
-                          ? "bg-green-700 text-white font-semibold"
-                          : ""
-                        }`}
+                      className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                        item.signal === "ENTRY_READY"
+                          ? "bg-green-600 text-white"
+                          : "bg-yellow-100 text-yellow-800"
+                      }`}
                     >
                       {item.signal}
                     </span>
                   </td>
 
-                  <td className="py-1 px-0.5 sm:py-2 sm:px-2 whitespace-nowrap text-gray-600">
+                  {/* Sector */}
+                  <td className="py-2 px-2 text-gray-600 whitespace-nowrap">
                     {item.sector}
                   </td>
+
+                  {/* Options */}
+                  
+                <td className="py-2 px-2 text-center">
+                  {item.isOptionChain && (
+                    <button
+                      className="text-purple-600 hover:text-purple-800 text-lg"
+                      onClick={() => setSelectedSymbol(item.symbol)}
+                    >
+                      📈
+                    </button>
+                  )}
+                </td>
+
                 </tr>
               );
             })
           )}
         </tbody>
       </table>
+
     </div>
+
+     <OptionMetricsModal
+      symbol={selectedSymbol}
+      onClose={() => setSelectedSymbol(null)}
+    />
+    </>
   );
 };
 
