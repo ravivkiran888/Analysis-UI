@@ -42,7 +42,7 @@ const fetchAll = async (dispatch) => {
   }
 };
 
-export function useSignals() {
+export function useFetchAll() {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
