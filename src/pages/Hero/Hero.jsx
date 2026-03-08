@@ -6,8 +6,6 @@ import StockList from "@/components/StocksList/StockList";
 const Hero = () => {
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <Header />
 
       {/* Dashboard Content */}
       <div className="flex gap-6 p-6">
