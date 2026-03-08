@@ -1,17 +1,7 @@
 import { useEffect, useState } from "react";
 import { formatTimestamp } from "../utils/formatters";
 
-const formatLabel = (key) =>
-  key
-    .replace(/([A-Z])/g, " $1")
-    .replace(/_/g, " ")
-    .replace(/CALL/g, "CE")
-    .replace(/PUT/g, "PE")
-    .trim()
-    .toUpperCase();
 
-const formatValue = (value) =>
-  typeof value === "number" ? value.toLocaleString() : value ?? "-";
 
 const MetricCard = ({ label, value }) => {
   let bg = "bg-gray-50 border border-gray-200";
@@ -88,7 +78,7 @@ const OptionMetricsModal = ({ symbol, onClose }) => {
       >
         {/* Header */}
         <div className="flex justify-between items-center border-b px-4 py-3">
-          <h2 className="font-semibold text-lg">Option Metrics - {symbol}</h2>
+          <h2 className="font-semibold text-lg">Option Metrics - {symbol}    -  {optionData?.currentPrice}</h2>
           <button className="text-gray-500 hover:text-black text-lg" onClick={onClose}>✕</button>
         </div>
 
