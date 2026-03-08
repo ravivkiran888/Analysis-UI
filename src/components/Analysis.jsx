@@ -15,6 +15,7 @@ const SignalsTable = () => {
       <div className="overflow-x-auto bg-white rounded-lg shadow-sm border border-gray-200">
 
         {/* Header */}
+        <h2 className="font-bold">All Symbols</h2>
         <div className="px-3 py-2 text-sm text-gray-600 border-b bg-gray-50">
           Last Updated:
           <span className="font-semibold ml-1">
