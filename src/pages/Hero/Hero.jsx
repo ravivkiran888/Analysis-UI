@@ -1,5 +1,6 @@
 import Header from "@/components/header/Header";
-import StockList from "@/components/StocksList/StockList";
+import SectorSection from "../../components/SectorSection";
+import SignalsTable from "../../components/SignalsTable";
 
 
 
@@ -14,8 +15,9 @@ const Hero = () => {
         {/* Main Area */}
         <div className="flex-1">
 
+        <SectorSection></SectorSection>
+        <SignalsTable></SignalsTable>
 
-        <StockList></StockList> 
 
         </div>
       </div>
