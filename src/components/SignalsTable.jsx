@@ -13,8 +13,11 @@ const SignalsTable = () => {
   const [sortColumn, setSortColumn] = useState("");
   const [sortDirection, setSortDirection] = useState("");
 
-const renderArrow = (column) =>
-  sortColumn === column ? (sortDirection === "asc" ? "▲" : "▼") : "";
+
+const renderArrow = (column) => {
+  if (sortColumn !== column) return "";
+  return sortDirection === "asc" ? "▲" : "▼";
+};
 
   const handleSort = (column) => {
     if (sortColumn === column) {
