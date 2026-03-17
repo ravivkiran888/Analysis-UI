@@ -1,10 +1,11 @@
 import { formatTimestamp } from '../utils/formatters'
 import { useSectors } from '../hooks/useSectors'
+import { useState } from "react";
 
-const SectorSection = () => {
-
+const SectorSection = ({ onSectorSelect }) => {
+  
+  const [sectName, setSectName] = useState(null);
   const { data = [], loading, error } = useSectors();
-
   const lastUpdated = data.length > 0 ? data[0].timestamp : null;
 
   if (loading) {
@@ -14,6 +15,18 @@ const SectorSection = () => {
   if (error) {
     return <div className="mb-6 text-sm text-red-500">Failed to load sectors</div>;
   }
+
+  const handleSectorSection = (sectorName) => {
+
+  if (sectorName === sectName) {
+    setSectName('');
+    onSectorSelect(null);   
+  } else {
+    setSectName(sectorName);
+    onSectorSelect(sectorName);
+  }
+
+};
 
   return (
     <div className="mb-6">
@@ -30,10 +43,14 @@ const SectorSection = () => {
         {data.map((sector) => (
           <div
             key={sector.sector}
+            onClick={() => handleSectorSection(sector.sector)}
             className="border rounded p-3 cursor-pointer hover:shadow"
           >
             <div className="text-xs text-gray-500 uppercase">
               {sector.sector}
+
+              
+
             </div>
 
             <div

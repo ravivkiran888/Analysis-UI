@@ -2,17 +2,28 @@ import { formatTimestamp, formatVolume } from "../utils/formatters";
 import { useSignals } from "../hooks/useSignals";
 import { sortData , toggleSort } from "../utils/sorting";
 import { useState } from "react";
+import { useMemo } from "react";
+
+const BANK_SECTOR_MAPPING = 
+   ["BANKNIFTY", "NIFTYPVTBANK", "NIFTYPSUBANK"];
 
 
+const SignalsTable = ({sector}) => {
 
-
-const SignalsTable = () => {
+  
 
   const { data = [], loading, error } = useSignals();
-
   const [sortColumn, setSortColumn] = useState("");
   const [sortDirection, setSortDirection] = useState("");
 
+
+const filteredData = sector
+  ? data.filter(item =>
+      sector === "BANKNIFTY"
+        ? BANK_SECTOR_MAPPING.includes(item.sector)
+        : item.sector === sector
+    )
+  : data;
 
 const renderArrow = (column) => {
   if (sortColumn !== column) return "";
@@ -29,11 +40,11 @@ const renderArrow = (column) => {
     }
   };
 
-  const sortedData = sortColumn
-    ? sortData(data, sortColumn, sortDirection)
-    : data;
+  const sortedData = useMemo(() => {
+  return sortData(filteredData, sortColumn, sortDirection);
+}, [filteredData, sortColumn, sortDirection]);
 
-  const lastUpdated = data.length ? data[0].timestamp : null;
+  const lastUpdated = filteredData.length ? filteredData[0].timestamp : null;
 
   if (loading) {
     return <div className="mb-6 text-sm text-gray-500">Loading signals...</div>;
@@ -45,7 +56,7 @@ const renderArrow = (column) => {
 
   return (
     <div className="overflow-x-auto bg-white rounded-lg shadow-sm border border-gray-200">
-
+        {sector}
       <div className="px-3 py-2 text-sm text-gray-600 border-b bg-gray-50">
         Last Updated:
         <span className="font-semibold ml-1">
