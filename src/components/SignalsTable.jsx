@@ -1,48 +1,86 @@
 import { formatTimestamp, formatVolume } from "../utils/formatters";
 import { useSignals } from "../hooks/useSignals";
-import { sortData , toggleSort } from "../utils/sorting";
-import { useState } from "react";
-import { useMemo } from "react";
+import { sortData, toggleSort } from "../utils/sorting";
+import { useState, useMemo, useEffect } from "react";
 
-const BANK_SECTOR_MAPPING = 
-   ["BANKNIFTY", "NIFTYPVTBANK", "NIFTYPSUBANK"];
+const BANK_SECTOR_MAPPING = [
+  "BANKNIFTY",
+  "NIFTYPVTBANK",
+  "NIFTYPSUBBANK"
+];
 
-
-const SignalsTable = ({sector}) => {
-
-  
+const SignalsTable = ({ sector }) => {
 
   const { data = [], loading, error } = useSignals();
+
   const [sortColumn, setSortColumn] = useState("");
   const [sortDirection, setSortDirection] = useState("");
 
+  // ✅ Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
 
-const filteredData = sector
-  ? data.filter(item =>
-      sector === "BANKNIFTY"
-        ? BANK_SECTOR_MAPPING.includes(item.sector)
-        : item.sector === sector
-    )
-  : data;
+  // ✅ Filtering
+  const filteredData = sector
+    ? data.filter(item =>
+        sector === "BANKNIFTY"
+          ? BANK_SECTOR_MAPPING.includes(item.sector)
+          : item.sector === sector
+      )
+    : data;
 
-const renderArrow = (column) => {
-  if (sortColumn !== column) return "";
-  return sortDirection === "asc" ? "▲" : "▼";
-};
+  // ✅ Sorting
+  const sortedData = useMemo(() => {
+    return sortData(filteredData, sortColumn, sortDirection);
+  }, [filteredData, sortColumn, sortDirection]);
+
+  // ✅ Pagination slice
+  const paginatedData = useMemo(() => {
+    return sortedData.slice(
+      (currentPage - 1) * rowsPerPage,
+      currentPage * rowsPerPage
+    );
+  }, [sortedData, currentPage]);
+
+  const totalPages = Math.ceil(sortedData.length / rowsPerPage);
+
+  // ✅ Reset page on sector change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sector]);
+
+  // ✅ Google-style page numbers logic
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 5;
+
+    let start = Math.max(1, currentPage - 2);
+    let end = Math.min(totalPages, start + maxVisible - 1);
+
+    if (end - start < maxVisible - 1) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
+    return pages;
+  };
+
+  const renderArrow = (column) => {
+    if (sortColumn !== column) return "";
+    return sortDirection === "asc" ? "▲" : "▼";
+  };
 
   const handleSort = (column) => {
     if (sortColumn === column) {
       setSortDirection(toggleSort(sortDirection));
-      
     } else {
       setSortColumn(column);
       setSortDirection("desc");
     }
   };
-
-  const sortedData = useMemo(() => {
-  return sortData(filteredData, sortColumn, sortDirection);
-}, [filteredData, sortColumn, sortDirection]);
 
   const lastUpdated = filteredData.length ? filteredData[0].timestamp : null;
 
@@ -56,7 +94,9 @@ const renderArrow = (column) => {
 
   return (
     <div className="overflow-x-auto bg-white rounded-lg shadow-sm border border-gray-200">
-        {sector}
+
+      {sector}
+
       <div className="px-3 py-2 text-sm text-gray-600 border-b bg-gray-50">
         Last Updated:
         <span className="font-semibold ml-1">
@@ -68,40 +108,31 @@ const renderArrow = (column) => {
 
         <thead className="text-xs uppercase text-gray-500 bg-gray-50">
           <tr>
-            <th className="text-left py-2 px-2 font-semibold">Symbol</th>
-            <th className="hidden sm:table-cell text-right py-2 px-2 font-semibold">Open</th>
+            <th className="text-left py-2 px-2">Symbol</th>
+            <th className="hidden sm:table-cell text-right py-2 px-2">Open</th>
 
-            <th
-              className="text-right py-2 px-2 font-semibold cursor-pointer"
-              onClick={() => handleSort("lastTradedPrice")}
-            >
-              LTP  {renderArrow("lastTradedPrice")}
+            <th onClick={() => handleSort("lastTradedPrice")} className="text-right cursor-pointer">
+              LTP {renderArrow("lastTradedPrice")}
             </th>
 
-            <th
-              className="text-right py-2 px-2 font-semibold cursor-pointer"
-              onClick={() => handleSort("dayChange")}
-            >
+            <th onClick={() => handleSort("dayChange")} className="text-right cursor-pointer">
               Change {renderArrow("dayChange")}
             </th>
 
-            <th className="text-right py-2 px-2 font-semibold">Day Range</th>
+            <th className="text-right">Day Range</th>
 
-            <th
-              className="text-right py-2 px-2 font-semibold cursor-pointer"
-              onClick={() => handleSort("totalDayVolume")}
-            >
+            <th onClick={() => handleSort("totalDayVolume")} className="text-right cursor-pointer">
               Volume {renderArrow("totalDayVolume")}
             </th>
 
-            <th className="text-center py-2 px-2 font-semibold">Signal</th>
-            <th className="text-left py-2 px-2 font-semibold">Sector</th>
+            <th className="text-center">Signal</th>
+            <th className="text-left">Sector</th>
           </tr>
         </thead>
 
-        <tbody className="divide-y divide-gray-100">
+        <tbody>
 
-          {sortedData.map((item) => {
+          {paginatedData.map((item) => {
 
             const openLowDiff = item.dayOpen - item.dayLow;
             const highlight = openLowDiff < 0.5;
@@ -115,53 +146,106 @@ const renderArrow = (column) => {
                 : "bg-yellow-100 text-yellow-800";
 
             return (
-              <tr
-                key={item.symbol}
-                className={`odd:bg-white even:bg-gray-50 hover:bg-gray-100 transition ${highlight ? "bg-green-50" : ""
-                  }`}
-              >
+              <tr key={item.symbol} className={highlight ? "bg-green-50" : ""}>
+
                 <td className="py-2 px-2 font-semibold text-blue-600">
                   {item.symbol}
                 </td>
 
-                <td className="hidden sm:table-cell text-right py-2 px-2">
+                <td className="hidden sm:table-cell text-right">
                   {item.dayOpen?.toFixed(2)}
                 </td>
 
-                <td className="py-2 px-2 text-right font-semibold">
+                <td className="text-right font-semibold">
                   {item.lastTradedPrice?.toFixed(2)}
                 </td>
 
-                <td className={`py-2 px-2 text-right font-semibold ${changeColor}`}>
+                <td className={`text-right font-semibold ${changeColor}`}>
                   {item.dayChange >= 0 ? "+" : ""}
                   {item.dayChange?.toFixed(2)}
                 </td>
 
-                <td className="py-2 px-2 text-right">
+                <td className="text-right">
                   <span className="text-green-600">{item.dayHigh?.toFixed(2)}</span>
-                  <span className="mx-1 text-gray-400">/</span>
+                  /
                   <span className="text-red-600">{item.dayLow?.toFixed(2)}</span>
                 </td>
 
-                <td className="py-2 px-2 text-right font-mono">
+                <td className="text-right font-mono">
                   {formatVolume(item.totalDayVolume)}
                 </td>
 
-                <td className="py-2 px-2 text-center">
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${signalStyle}`}>
+                <td className="text-center">
+                  <span className={`px-2 py-1 rounded ${signalStyle}`}>
                     {item.signal}
                   </span>
                 </td>
 
-                <td className="py-2 px-2 text-gray-600">
+                <td>
                   {item.sector === "Unknown" ? "" : item.sector}
                 </td>
+
               </tr>
             );
           })}
 
         </tbody>
       </table>
+
+      {/* ✅ Google Style Pagination */}
+      <div className="flex justify-center items-center gap-2 p-3">
+
+        {/* Prev */}
+        <button
+          onClick={() => setCurrentPage(p => p - 1)}
+          disabled={currentPage === 1}
+          className="px-3 py-1 border rounded disabled:opacity-50"
+        >
+          Prev
+        </button>
+
+        {/* First + ... */}
+        {currentPage > 3 && (
+          <>
+            <button onClick={() => setCurrentPage(1)} className="px-2">1</button>
+            <span>...</span>
+          </>
+        )}
+
+        {/* Page Numbers */}
+        {getPageNumbers().map(page => (
+          <button
+            key={page}
+            onClick={() => setCurrentPage(page)}
+            className={`px-3 py-1 border rounded ${
+              currentPage === page ? "bg-blue-600 text-white" : ""
+            }`}
+          >
+            {page}
+          </button>
+        ))}
+
+        {/* ... + Last */}
+        {currentPage < totalPages - 2 && (
+          <>
+            <span>...</span>
+            <button onClick={() => setCurrentPage(totalPages)} className="px-2">
+              {totalPages}
+            </button>
+          </>
+        )}
+
+        {/* Next */}
+        <button
+          onClick={() => setCurrentPage(p => p + 1)}
+          disabled={currentPage === totalPages}
+          className="px-3 py-1 border rounded disabled:opacity-50"
+        >
+          Next
+        </button>
+
+      </div>
+
     </div>
   );
 };
