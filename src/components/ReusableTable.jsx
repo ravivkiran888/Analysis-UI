@@ -5,7 +5,12 @@ const ReusableTable = ({ columns, data }) => {
       <thead className="text-xs uppercase text-gray-500 bg-gray-50">
         <tr>
           {columns.map((col) => (
-            <th key={col.accessor} className={col.className}>
+            <th
+              key={col.accessor}
+              className={col.className}
+              onClick={col.onClick}
+              style={{ cursor: col.onClick ? "pointer" : "default" }}
+            >
               {col.header}
             </th>
           ))}

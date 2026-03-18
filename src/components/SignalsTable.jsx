@@ -4,11 +4,14 @@ import { sortData, toggleSort } from "../utils/sorting";
 import { useState, useMemo, useEffect } from "react";
 import ReusableTable from "./ReusableTable";
 
-const BANK_SECTOR_MAPPING = [
-  "BANKNIFTY",
-  "NIFTYPVTBANK",
-  "NIFTYPSUBBANK"
-];
+// ✅ Group mapping
+const SECTOR_GROUPS = {
+  BANKNIFTY: ["BANKNIFTY", "NIFTYPVTBANK", "NIFTYPSUBANK"]
+};
+
+// ✅ Normalize helper
+const normalize = (val) =>
+  val?.replace(/\s+/g, "").trim().toUpperCase();
 
 const SignalsTable = ({ sector }) => {
 
@@ -18,16 +21,28 @@ const SignalsTable = ({ sector }) => {
   const [sortDirection, setSortDirection] = useState("");
 
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 10;
+  const rowsPerPage = 15;
 
-  // ✅ Filtering
-  const filteredData = sector
-    ? data.filter(item =>
-        sector === "BANKNIFTY"
-          ? BANK_SECTOR_MAPPING.includes(item.sector)
-          : item.sector === sector
-      )
-    : data;
+  const filteredData = useMemo(() => {
+
+
+  if (!sector) return data;
+
+  const normalizedSector = normalize(sector);
+
+  return data.filter(item => {
+    const itemSector = normalize(item.sector);
+
+    if (SECTOR_GROUPS[normalizedSector]) {
+      return SECTOR_GROUPS[normalizedSector]
+        .map(normalize)
+        .includes(itemSector);
+    }
+
+    return itemSector === normalizedSector;
+  });
+
+}, [data, sector]);
 
   // ✅ Sorting
   const sortedData = useMemo(() => {
@@ -40,7 +55,7 @@ const SignalsTable = ({ sector }) => {
       (currentPage - 1) * rowsPerPage,
       currentPage * rowsPerPage
     );
-  }, [sortedData, currentPage]);
+  }, [sortedData, currentPage, rowsPerPage]);
 
   const totalPages = Math.ceil(sortedData.length / rowsPerPage);
 
@@ -57,6 +72,8 @@ const SignalsTable = ({ sector }) => {
       setSortColumn(column);
       setSortDirection("desc");
     }
+
+    setCurrentPage(1); // 🔥 important
   };
 
   const lastUpdated = filteredData.length ? filteredData[0].timestamp : null;
@@ -69,7 +86,7 @@ const SignalsTable = ({ sector }) => {
     return <div className="mb-6 text-sm text-red-500">Failed to load signals</div>;
   }
 
-  // ✅ Columns (UI moved here)
+  // ✅ Columns
   const columns = [
     {
       header: "Symbol",
@@ -160,7 +177,7 @@ const SignalsTable = ({ sector }) => {
     }
   ];
 
-  // ✅ Row highlight logic
+  // ✅ Row highlight
   const tableData = paginatedData.map(item => {
     const highlight = item.dayOpen - item.dayLow < 0.5;
 
@@ -182,10 +199,8 @@ const SignalsTable = ({ sector }) => {
         </span>
       </div>
 
-      {/* ✅ Reusable Table */}
       <ReusableTable columns={columns} data={tableData} />
 
-      {/* ✅ Pagination (kept as-is for now) */}
       <div className="flex justify-center items-center gap-2 p-3">
 
         <button
