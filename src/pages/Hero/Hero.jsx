@@ -1,4 +1,3 @@
-import Header from "@/components/header/Header";
 import SectorSection from "../../components/SectorSection";
 import SignalsTable from "../../components/SignalsTable";
 import { useState } from "react";
