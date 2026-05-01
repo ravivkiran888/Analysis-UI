@@ -1,166 +1,231 @@
 import { formatTimestamp, formatVolume } from "../utils/formatters";
-import { useState } from "react";
-import OptionMetricsModal from "./OptionMetricsModal";
+import { useSignals } from "../hooks/useSignals";
+import { sortData, toggleSort } from "../utils/sorting";
+import { useState, useMemo, useEffect } from "react";
+import ReusableTable from "./ReusableTable";
 
-const SignalsTable = ({ data, sortConfig, onSort, selectedSector }) => {
+// ✅ Group mapping
+const SECTOR_GROUPS = {
+  BANKNIFTY: ["BANKNIFTY", "NIFTYPVTBANK", "NIFTYPSUBANK"]
+};
 
-  const [selectedSymbol, setSelectedSymbol] = useState(null);
+// ✅ Normalize helper
+const normalize = (val) =>
+  val?.replace(/\s+/g, "").trim().toUpperCase();
+
+const SignalsTable = ({ sector }) => {
+
+  const { data = [], loading, error } = useSignals();
+
+  const [sortColumn, setSortColumn] = useState("");
+  const [sortDirection, setSortDirection] = useState("");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 15;
+
+  const filteredData = useMemo(() => {
+
+
+  if (!sector) return data;
+
+  const normalizedSector = normalize(sector);
+
+  return data.filter(item => {
+    const itemSector = normalize(item.sector);
+
+    if (SECTOR_GROUPS[normalizedSector]) {
+      return SECTOR_GROUPS[normalizedSector]
+        .map(normalize)
+        .includes(itemSector);
+    }
+
+    return itemSector === normalizedSector;
+  });
+
+}, [data, sector]);
+
+  // ✅ Sorting
+  const sortedData = useMemo(() => {
+    return sortData(filteredData, sortColumn, sortDirection);
+  }, [filteredData, sortColumn, sortDirection]);
+
+  // ✅ Pagination
+  const paginatedData = useMemo(() => {
+    return sortedData.slice(
+      (currentPage - 1) * rowsPerPage,
+      currentPage * rowsPerPage
+    );
+  }, [sortedData, currentPage, rowsPerPage]);
+
+  const totalPages = Math.ceil(sortedData.length / rowsPerPage);
+
+  // ✅ Reset page on sector change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sector]);
+
+  // ✅ Sorting handler
+  const handleSort = (column) => {
+    if (sortColumn === column) {
+      setSortDirection(toggleSort(sortDirection));
+    } else {
+      setSortColumn(column);
+      setSortDirection("desc");
+    }
+
+    setCurrentPage(1); // 🔥 important
+  };
+
+  const lastUpdated = filteredData.length ? filteredData[0].timestamp : null;
+
+  if (loading) {
+    return <div className="mb-6 text-sm text-gray-500">Loading signals...</div>;
+  }
+
+  if (error) {
+    return <div className="mb-6 text-sm text-red-500">Failed to load signals</div>;
+  }
+
+  // ✅ Columns
+  const columns = [
+    {
+      header: "Symbol",
+      accessor: "symbol",
+      className: "text-left py-2 px-2",
+      render: (row) => (
+        <span className="font-semibold text-blue-600">
+          {row.symbol}
+        </span>
+      )
+    },
+    {
+      header: "Open",
+      accessor: "dayOpen",
+      className: "hidden sm:table-cell text-right py-2 px-2",
+      render: (row) => row.dayOpen?.toFixed(2)
+    },
+    {
+      header: "LTP",
+      accessor: "lastTradedPrice",
+      className: "text-right cursor-pointer",
+      render: (row) => row.lastTradedPrice?.toFixed(2),
+      onClick: () => handleSort("lastTradedPrice")
+    },
+    {
+      header: "Change",
+      accessor: "dayChange",
+      className: "text-right cursor-pointer",
+      onClick: () => handleSort("dayChange"),
+      render: (row) => {
+        const color =
+          row.dayChange >= 0 ? "text-green-600" : "text-red-600";
+
+        return (
+          <span className={color}>
+            {row.dayChange >= 0 ? "+" : ""}
+            {row.dayChange?.toFixed(2)}
+          </span>
+        );
+      }
+    },
+    {
+      header: "Day Range",
+      accessor: "range",
+      className: "text-right",
+      render: (row) => (
+        <>
+          <span className="text-green-600">
+            {row.dayHigh?.toFixed(2)}
+          </span>
+          /
+          <span className="text-red-600">
+            {row.dayLow?.toFixed(2)}
+          </span>
+        </>
+      )
+    },
+    {
+      header: "Volume",
+      accessor: "totalDayVolume",
+      className: "text-right cursor-pointer",
+      onClick: () => handleSort("totalDayVolume"),
+      render: (row) => formatVolume(row.totalDayVolume)
+    },
+    {
+      header: "Signal",
+      accessor: "signal",
+      className: "text-center",
+      render: (row) => {
+        const style =
+          row.signal === "ENTRY_READY"
+            ? "bg-green-600 text-white"
+            : "bg-yellow-100 text-yellow-800";
+
+        return (
+          <span className={`px-2 py-1 rounded ${style}`}>
+            {row.signal}
+          </span>
+        );
+      }
+    },
+    {
+      header: "Sector",
+      accessor: "sector",
+      className: "text-left",
+      render: (row) =>
+        row.sector === "Unknown" ? "" : row.sector
+    }
+  ];
+
+  // ✅ Row highlight
+  const tableData = paginatedData.map(item => {
+    const highlight = item.dayOpen - item.dayLow < 0.5;
+
+    return {
+      ...item,
+      rowClass: highlight ? "bg-green-50" : ""
+    };
+  });
 
   return (
-    <>
-      <div className="overflow-x-auto bg-white rounded-lg shadow-sm border border-gray-200">
+    <div className="overflow-x-auto bg-white rounded-lg shadow-sm border border-gray-200">
 
-        {/* Header */}
-        <div className="px-3 py-2 text-sm text-gray-600 border-b bg-gray-50">
-          Last Updated:
-          <span className="font-semibold ml-1">
-            {formatTimestamp(data?.[0]?.timestamp)}
-          </span>
-        </div>
+      {sector}
 
-        <table className="w-full text-sm">
-          <thead className="text-xs uppercase text-gray-500 bg-gray-50">
-            <tr>
+      <div className="px-3 py-2 text-sm text-gray-600 border-b bg-gray-50">
+        Last Updated:
+        <span className="font-semibold ml-1">
+          {lastUpdated ? formatTimestamp(lastUpdated) : "—"}
+        </span>
+      </div>
 
-              <th className="text-left py-2 px-2 font-semibold">Symbol</th>
+      <ReusableTable columns={columns} data={tableData} />
 
-              <th className="hidden sm:table-cell text-right py-2 px-2 font-semibold">
-                Open
-              </th>
+      <div className="flex justify-center items-center gap-2 p-3">
 
-              <th className="text-right py-2 px-2 font-semibold">LTP</th>
+        <button
+          onClick={() => setCurrentPage(p => p - 1)}
+          disabled={currentPage === 1}
+          className="px-3 py-1 border rounded disabled:opacity-50"
+        >
+          Prev
+        </button>
 
-              <th
-                className="text-right py-2 px-2 font-semibold cursor-pointer hover:bg-gray-100"
-                onClick={() => onSort("dayChange")}
-              >
-                Change
-                {sortConfig.key === "dayChange" &&
-                  (sortConfig.direction === "asc" ? " ↑" : " ↓")}
-              </th>
+        <span>
+          Page {currentPage} of {totalPages}
+        </span>
 
-              <th className="text-right py-2 px-2 font-semibold">Day Range</th>
-
-              <th
-                className="text-right py-2 px-2 font-semibold cursor-pointer hover:bg-gray-100"
-                onClick={() => onSort("totalDayVolume")}
-              >
-                Volume
-                {sortConfig.key === "totalDayVolume" &&
-                  (sortConfig.direction === "asc" ? " ↑" : " ↓")}
-              </th>
-
-              <th className="text-center py-2 px-2 font-semibold">Signal</th>
-
-              <th className="text-left py-2 px-2 font-semibold">Sector</th>
-
-              <th className="text-center py-2 px-2 font-semibold">Options</th>
-
-            </tr>
-          </thead>
-
-          <tbody className="divide-y divide-gray-100">
-            {!data || data.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="text-center py-8 text-gray-400 text-sm">
-                  No symbols found {selectedSector}
-                </td>
-              </tr>
-            ) : (
-              data.map((item) => {
-
-                const openLowDiff = item.dayOpen - item.dayLow;
-                const highlight = openLowDiff < 0.5;
-
-                return (
-                  <tr
-                    key={item.symbol}
-                    className={`odd:bg-white even:bg-gray-50 hover:bg-gray-100 transition ${
-                      highlight ? "bg-green-50" : ""
-                    }`}
-                    title={
-                      highlight ? `Open-Low difference: ${openLowDiff}` : ""
-                    }
-                  >
-
-                    <td className="py-2 px-2 font-semibold text-blue-600 hover:underline cursor-pointer whitespace-nowrap">
-                      {item.symbol}
-                    </td>
-
-                    <td className="hidden sm:table-cell text-right py-2 px-2">
-                      {item.dayOpen?.toFixed(2)}
-                    </td>
-
-                    <td className="py-2 px-2 text-right font-semibold">
-                      {item.lastTradedPrice?.toFixed(2)}
-                    </td>
-
-                    <td
-                      className={`py-2 px-2 text-right font-semibold ${
-                        item.dayChange >= 0
-                          ? "text-green-600"
-                          : "text-red-600"
-                      }`}
-                    >
-                      {item.dayChange >= 0 ? "+" : ""}
-                      {item.dayChange?.toFixed(2)}
-                    </td>
-
-                    <td className="py-2 px-2 text-right">
-                      <span className="text-green-600">
-                        {item.dayHigh?.toFixed(2)}
-                      </span>
-                      <span className="mx-1 text-gray-400">/</span>
-                      <span className="text-red-600">
-                        {item.dayLow?.toFixed(2)}
-                      </span>
-                    </td>
-
-                    <td className="py-2 px-2 text-right font-mono">
-                      {formatVolume(item.totalDayVolume)}
-                    </td>
-
-                    <td className="py-2 px-2 text-center">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                          item.signal === "ENTRY_READY"
-                            ? "bg-green-600 text-white"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {item.signal}
-                      </span>
-                    </td>
-
-                    <td className="py-2 px-2 text-gray-600">
-                      {item.sector}
-                    </td>
-
-                    <td className="py-2 px-2 text-center">
-                      {item.isOptionChain && (
-                        <button
-                          className="text-purple-600 hover:text-purple-800 text-lg"
-                          onClick={() => setSelectedSymbol(item.symbol)}
-                        >
-                          📈
-                        </button>
-                      )}
-                    </td>
-
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+        <button
+          onClick={() => setCurrentPage(p => p + 1)}
+          disabled={currentPage === totalPages}
+          className="px-3 py-1 border rounded disabled:opacity-50"
+        >
+          Next
+        </button>
 
       </div>
 
-      <OptionMetricsModal
-        symbol={selectedSymbol}
-        onClose={() => setSelectedSymbol(null)}
-      />
-    </>
+    </div>
   );
 };
 
