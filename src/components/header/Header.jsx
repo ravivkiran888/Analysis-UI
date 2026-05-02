@@ -12,6 +12,11 @@ const Header = () => {
         <Link to="/analysis" className="text-gray-300 hover:text-white transition">
           Analysis
         </Link>
+
+   <Link to="/avgPrice" className="text-gray-300 hover:text-white transition">
+          Avg-Price
+        </Link>
+
       </nav>
     </header>
   );

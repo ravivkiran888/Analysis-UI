@@ -3,6 +3,7 @@ import Layout from "./components/Layout"
 import Hero from "./pages/Hero/Hero";
 
 import OptionsSignalDashboard from "./components/OptionsTable";
+import AvgPriceTable from "./components/AvgPriceTable";
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<Hero />} />
            <Route path="analysis" element={<OptionsSignalDashboard />} />
+             <Route path="avgPrice" element={<AvgPriceTable />} />
         </Route>
       </Routes>
     </BrowserRouter>
