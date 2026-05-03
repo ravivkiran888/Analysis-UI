@@ -17,6 +17,11 @@ const Header = () => {
           Avg-Price
         </Link>
 
+   <Link to="/nsr" className="text-gray-300 hover:text-white transition">
+         Near Suppourt & BreakOut
+        </Link>
+
+
       </nav>
     </header>
   );

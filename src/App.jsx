@@ -4,6 +4,7 @@ import Hero from "./pages/Hero/Hero";
 
 import OptionsSignalDashboard from "./components/OptionsTable";
 import AvgPriceTable from "./components/AvgPriceTable";
+import SupportBreakoutTable from "./components/SupportBreakoutTable";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
           <Route path="/" element={<Hero />} />
            <Route path="analysis" element={<OptionsSignalDashboard />} />
              <Route path="avgPrice" element={<AvgPriceTable />} />
+               <Route path="nsr" element={<SupportBreakoutTable />} />
         </Route>
       </Routes>
     </BrowserRouter>
