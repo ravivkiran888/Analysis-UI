@@ -25,24 +25,23 @@ const SignalsTable = ({ sector }) => {
 
   const filteredData = useMemo(() => {
 
+    if (!sector) return data;
 
-  if (!sector) return data;
+    const normalizedSector = normalize(sector);
 
-  const normalizedSector = normalize(sector);
+    return data.filter(item => {
+      const itemSector = normalize(item.sector);
 
-  return data.filter(item => {
-    const itemSector = normalize(item.sector);
+      if (SECTOR_GROUPS[normalizedSector]) {
+        return SECTOR_GROUPS[normalizedSector]
+          .map(normalize)
+          .includes(itemSector);
+      }
 
-    if (SECTOR_GROUPS[normalizedSector]) {
-      return SECTOR_GROUPS[normalizedSector]
-        .map(normalize)
-        .includes(itemSector);
-    }
+      return itemSector === normalizedSector;
+    });
 
-    return itemSector === normalizedSector;
-  });
-
-}, [data, sector]);
+  }, [data, sector]);
 
   // ✅ Sorting
   const sortedData = useMemo(() => {
@@ -73,7 +72,7 @@ const SignalsTable = ({ sector }) => {
       setSortDirection("desc");
     }
 
-    setCurrentPage(1); // 🔥 important
+    setCurrentPage(1);
   };
 
   const lastUpdated = filteredData.length ? filteredData[0].timestamp : null;
@@ -192,6 +191,7 @@ const SignalsTable = ({ sector }) => {
 
       {sector}
 
+      {/* Last Updated */}
       <div className="px-3 py-2 text-sm text-gray-600 border-b bg-gray-50">
         Last Updated:
         <span className="font-semibold ml-1">
@@ -199,8 +199,20 @@ const SignalsTable = ({ sector }) => {
         </span>
       </div>
 
+      {/* ✅ Entry Criteria Note */}
+      <div className="px-3 py-2 text-xs text-gray-600 border-b bg-blue-50">
+        <span className="font-semibold">Note:</span> Entry Criteria:
+        <br />
+        • Trend: VWAP + EMA20 <br />
+        • Momentum: RSI + Price Rising <br />
+        • Participation: Volume Expansion <br />
+        • Trigger: Breakout
+      </div>
+
+      {/* Table */}
       <ReusableTable columns={columns} data={tableData} />
 
+      {/* Pagination */}
       <div className="flex justify-center items-center gap-2 p-3">
 
         <button
