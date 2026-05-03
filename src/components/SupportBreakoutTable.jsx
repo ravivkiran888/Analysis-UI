@@ -29,12 +29,11 @@ const SupportBreakoutTable = () => {
   return (
     <div className="p-4">
 
-      {/* 🔹 Title */}
       <h2 className="text-xl font-semibold mb-4">
         Support & Breakout Signals
       </h2>
 
-      {/* 🔹 TOP INFO PANEL */}
+      {/* 🔹 INFO PANEL */}
       <div className="mb-4 p-4 bg-gray-50 border rounded-lg shadow-sm">
 
         <h3 className="text-lg font-semibold mb-2">
@@ -43,39 +42,29 @@ const SupportBreakoutTable = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
 
-          {/* SUPPORT_BOUNCE */}
           <div className="p-3 border rounded bg-white">
             <p className="font-semibold text-blue-600 mb-1">
               SUPPORT_BOUNCE
             </p>
             <p>
-              Price is near previous support and trading above today's open.
-            </p>
-            <p className="text-gray-600 mt-1">
-              ➤ Possible reversal zone. Wait for confirmation.
+              Price near support and above open → possible reversal.
             </p>
           </div>
 
-          {/* BREAK_RESISTANCE */}
           <div className="p-3 border rounded bg-white">
             <p className="font-semibold text-green-600 mb-1">
               BREAK_RESISTANCE
             </p>
             <p>
-              Price has just broken above resistance within a tight range.
-            </p>
-            <p className="text-gray-600 mt-1">
-              ➤ Early breakout. Look for volume confirmation.
+              Price just broke resistance → early breakout.
             </p>
           </div>
 
         </div>
 
-        {/* 🔹 Legend */}
         <div className="mt-3 text-xs text-gray-600">
           <p>🟢 Breakout → Momentum trade</p>
           <p>🔵 Support Bounce → Reversal trade</p>
-          <p>⚠️ Always confirm with volume</p>
         </div>
 
       </div>
@@ -91,6 +80,7 @@ const SupportBreakoutTable = () => {
               <th className="px-4 py-2 border">LTP</th>
               <th className="px-4 py-2 border">Open</th>
               <th className="px-4 py-2 border">Low</th>
+              <th className="px-4 py-2 border">EMA20</th>   {/* ✅ NEW */}
               <th className="px-4 py-2 border">Prev Low</th>
               <th className="px-4 py-2 border">Prev High</th>
               <th className="px-4 py-2 border">Volume</th>
@@ -102,7 +92,7 @@ const SupportBreakoutTable = () => {
           <tbody>
             {currentData.length > 0 ? (
               currentData.map((item, index) => {
-                
+
                 const isBullish =
                   Number(item.lastTradedPrice) > Number(item.dayOpen);
 
@@ -121,18 +111,22 @@ const SupportBreakoutTable = () => {
                       {item.lastTradedPrice}
                     </td>
 
-                    {/* Open */}
                     <td className={`px-4 py-2 border ${
                       isBullish ? "text-green-600" : "text-red-500"
                     }`}>
                       {item.dayOpen}
                     </td>
 
-                    {/* Low */}
                     <td className="px-4 py-2 border">
                       {item.dayLow}
                     </td>
 
+                    {/* ✅ EMA20 */}
+                    <td className="px-4 py-2 border">
+                      {item.ema20}
+                    </td>
+
+       
                     <td className="px-4 py-2 border">
                       {item.prevLowD}
                     </td>
@@ -145,16 +139,13 @@ const SupportBreakoutTable = () => {
                       {item.totalDayVolume?.toLocaleString()}
                     </td>
 
-                    {/* Category */}
-                    <td
-                      className={`px-4 py-2 border font-semibold ${
-                        item.category === "BREAK_RESISTANCE"
-                          ? "text-green-600"
-                          : item.category === "SUPPORT_BOUNCE"
-                          ? "text-blue-600"
-                          : "text-gray-500"
-                      }`}
-                    >
+                    <td className={`px-4 py-2 border font-semibold ${
+                      item.category === "BREAK_RESISTANCE"
+                        ? "text-green-600"
+                        : item.category === "SUPPORT_BOUNCE"
+                        ? "text-blue-600"
+                        : "text-gray-500"
+                    }`}>
                       {item.category}
                     </td>
 
@@ -167,7 +158,7 @@ const SupportBreakoutTable = () => {
               })
             ) : (
               <tr>
-                <td colSpan="10" className="text-center py-4 text-gray-500">
+                <td colSpan="12" className="text-center py-4 text-gray-500">
                   No data available
                 </td>
               </tr>
@@ -198,6 +189,7 @@ const SupportBreakoutTable = () => {
           Next
         </button>
       </div>
+
     </div>
   );
 };
