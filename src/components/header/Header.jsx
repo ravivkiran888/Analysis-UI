@@ -10,7 +10,7 @@ const Header = () => {
           Home
         </Link>
         <Link to="/analysis" className="text-gray-300 hover:text-white transition">
-          Analysis
+          Option-Analysis
         </Link>
 
    <Link to="/avgPrice" className="text-gray-300 hover:text-white transition">
