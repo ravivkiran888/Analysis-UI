@@ -25,7 +25,7 @@ const PivotLevels = () => {
 
     setPivotData(null);
   
-       fetch(`${import.meta.env.VITE_API_BASE_URL}/api/signals/avgPrice/${symbol}`)
+       fetch(`${import.meta.env.VITE_API_BASE_URL}/api/signals/pivot/${symbol}`)
     
       .then((response) => {
 
