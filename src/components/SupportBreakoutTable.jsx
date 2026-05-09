@@ -76,11 +76,9 @@ const SupportBreakoutTable = () => {
           <thead className="bg-gray-100">
             <tr>
               <th className="px-4 py-2 border">Symbol</th>
-              <th className="px-4 py-2 border">Sector</th>
               <th className="px-4 py-2 border">LTP</th>
               <th className="px-4 py-2 border">Open</th>
               <th className="px-4 py-2 border">Low</th>
-              <th className="px-4 py-2 border">EMA20</th>   {/* ✅ NEW */}
               <th className="px-4 py-2 border">Prev Low</th>
               <th className="px-4 py-2 border">Prev High</th>
               <th className="px-4 py-2 border">Volume</th>
@@ -103,9 +101,6 @@ const SupportBreakoutTable = () => {
                       {item.symbol}
                     </td>
 
-                    <td className="px-4 py-2 border">
-                      {item.sector}
-                    </td>
 
                     <td className="px-4 py-2 border font-semibold">
                       {item.lastTradedPrice}
@@ -121,10 +116,6 @@ const SupportBreakoutTable = () => {
                       {item.dayLow}
                     </td>
 
-                    {/* ✅ EMA20 */}
-                    <td className="px-4 py-2 border">
-                      {item.ema20}
-                    </td>
 
        
                     <td className="px-4 py-2 border">
