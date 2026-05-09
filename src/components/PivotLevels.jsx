@@ -24,10 +24,9 @@ const PivotLevels = () => {
     setError("");
 
     setPivotData(null);
-
-    fetch(
-      `http://localhost:8082/analysis/api/signals/pivot/${symbol}`
-    )
+  
+       fetch(`${import.meta.env.VITE_API_BASE_URL}/api/signals/avgPrice/${symbol}`)
+    
       .then((response) => {
 
         if (!response.ok) {
