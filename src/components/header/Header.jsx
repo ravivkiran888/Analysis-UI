@@ -20,6 +20,11 @@ const Header = () => {
         </Link>
 
 
+ <Link to="/pivot" className="text-gray-300 hover:text-white transition">
+          Pivot Levels
+        </Link>
+
+
       </nav>
     </header>
   );
